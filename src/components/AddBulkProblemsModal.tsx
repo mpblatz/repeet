@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { type ProblemDifficulty } from "../lib/supabase";
-import grind75text from "../lib/grind-75.txt?raw";
-import neetcode150text from "../lib/neetcode-150.txt?raw";
+import { type ProblemDifficulty } from "../lib/database";
+import grind75text from "../assets/grind-75.txt?raw";
+import neetcode150text from "../assets/neetcode-150.txt?raw";
 
 interface BulkImportModalProps {
     onClose: () => void;

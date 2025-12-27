@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { bulkAddProblems, supabase, type ProblemWithAttempts } from "./lib/supabase";
+import { bulkAddProblems, supabase, type ProblemWithAttempts } from "./lib/database";
 import {
     getQueueProblems,
     getReviewProblems,
@@ -10,7 +10,7 @@ import {
     addProblem,
     deleteProblem,
     type ProblemDifficulty,
-} from "./lib/supabase";
+} from "./lib/database";
 import Auth from "./components/Auth";
 import QueueList from "./components/QueueList";
 import ReviewList from "./components/ReviewList";
@@ -200,9 +200,7 @@ function App() {
             <div className="flex flex-col space-y-8 m-20 w-full">
                 {/* Header */}
                 <header className="flex justify-between">
-                    <p>
-                        {"<"} LeetCode Tracker {"/>"}
-                    </p>
+                    <p>Repeet - Spaced Repetition for LeetCode</p>
 
                     <div className="flex space-x-4">
                         <span>{session.user.email}</span>

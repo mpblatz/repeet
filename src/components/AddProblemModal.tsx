@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { type ProblemDifficulty } from "../lib/supabase";
+import { type ProblemDifficulty } from "../lib/database";
 
 interface AddProblemModalProps {
     onClose: () => void;

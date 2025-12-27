@@ -1,4 +1,4 @@
-import { type ProblemWithAttempts } from "../lib/supabase";
+import { type ProblemWithAttempts } from "../lib/database";
 import ProblemCard from "./ProblemCard";
 
 interface MasteredListProps {

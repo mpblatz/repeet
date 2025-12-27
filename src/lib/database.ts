@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Supabase configuration
-const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
     throw new Error("Missing Supabase environment variables. Check your .env.local file.");
@@ -522,3 +522,250 @@ export const getStats = async () => {
             activeCount + masteredCount > 0 ? Math.round((masteredCount / (activeCount + masteredCount)) * 100) : 0,
     };
 };
+
+// Add this at the very end of supabase.ts, after all your existing functions
+
+// ============================================================================
+// Storage Abstraction Layer (Supabase OR localStorage)
+// ============================================================================
+
+class StorageAdapter {
+    private async isAuthenticated(): Promise<boolean> {
+        const {
+            data: { session },
+        } = await supabase.auth.getSession();
+        return !!session;
+    }
+
+    // ========== localStorage helpers ==========
+
+    private getLocalProblems(): ProblemWithAttempts[] {
+        const data = localStorage.getItem("repeet-problems");
+        return data ? JSON.parse(data) : [];
+    }
+
+    private saveLocalProblems(problems: ProblemWithAttempts[]): void {
+        localStorage.setItem("repeet-problems", JSON.stringify(problems));
+    }
+
+    // ========== Public API (works with both Supabase and localStorage) ==========
+
+    async getQueueProblems(): Promise<ProblemWithAttempts[]> {
+        if (await this.isAuthenticated()) {
+            return getQueueProblems();
+        } else {
+            const problems = this.getLocalProblems();
+            return problems
+                .filter((p) => p.status === "queued")
+                .sort((a, b) => (a.queue_position || 0) - (b.queue_position || 0));
+        }
+    }
+
+    async getReviewProblems(): Promise<ProblemWithAttempts[]> {
+        if (await this.isAuthenticated()) {
+            return getReviewProblems();
+        } else {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const weekFromNow = new Date(today);
+            weekFromNow.setDate(weekFromNow.getDate() + 7);
+            const weekFromNowDate = weekFromNow.toISOString().split("T")[0];
+
+            const problems = this.getLocalProblems();
+            return problems.filter(
+                (p) => p.status === "active" && p.next_review_date && p.next_review_date <= weekFromNowDate
+            );
+        }
+    }
+
+    async getMasteredProblems(): Promise<ProblemWithAttempts[]> {
+        if (await this.isAuthenticated()) {
+            return getMasteredProblems();
+        } else {
+            const problems = this.getLocalProblems();
+            return problems
+                .filter((p) => p.status === "mastered")
+                .sort((a, b) => {
+                    const aDate = a.mastered_at ? new Date(a.mastered_at).getTime() : 0;
+                    const bDate = b.mastered_at ? new Date(b.mastered_at).getTime() : 0;
+                    return bDate - aDate;
+                });
+        }
+    }
+
+    async addProblem(problem: {
+        problem_name: string;
+        problem_link?: string;
+        difficulty: ProblemDifficulty;
+        source?: string;
+        topic?: string;
+    }): Promise<Problem> {
+        if (await this.isAuthenticated()) {
+            return addProblem(problem);
+        } else {
+            const problems = this.getLocalProblems();
+            const maxPosition = Math.max(...problems.map((p) => p.queue_position || 0), 0);
+
+            const newProblem: Problem = {
+                id: crypto.randomUUID(),
+                user_id: "local",
+                problem_name: problem.problem_name,
+                problem_link: problem.problem_link || null,
+                difficulty: problem.difficulty,
+                status: "queued",
+                queue_position: maxPosition + 1,
+                next_review_date: null,
+                attempt_count: 0,
+                consecutive_fives: 0,
+                last_rating: null,
+                created_at: new Date().toISOString(),
+                mastered_at: null,
+                source: problem.source || null,
+                topic: problem.topic || null,
+            };
+
+            const newProblemWithAttempts = { ...newProblem, attempts: [] };
+            this.saveLocalProblems([...problems, newProblemWithAttempts]);
+            return newProblem;
+        }
+    }
+
+    async addProblems(
+        problemsList: Array<{
+            problem_name: string;
+            problem_link?: string;
+            difficulty: ProblemDifficulty;
+            source?: string;
+            topic?: string;
+        }>
+    ): Promise<Problem[]> {
+        if (await this.isAuthenticated()) {
+            return addProblems(problemsList);
+        } else {
+            const existingProblems = this.getLocalProblems();
+            const maxPosition = Math.max(...existingProblems.map((p) => p.queue_position || 0), 0);
+
+            const newProblems = problemsList.map((problem, index) => {
+                const newProblem: Problem = {
+                    id: crypto.randomUUID(),
+                    user_id: "local",
+                    problem_name: problem.problem_name,
+                    problem_link: problem.problem_link || null,
+                    difficulty: problem.difficulty,
+                    status: "queued",
+                    queue_position: maxPosition + 1 + index,
+                    next_review_date: null,
+                    attempt_count: 0,
+                    consecutive_fives: 0,
+                    last_rating: null,
+                    created_at: new Date().toISOString(),
+                    mastered_at: null,
+                    source: problem.source || null,
+                    topic: problem.topic || null,
+                };
+                return newProblem;
+            });
+
+            const newProblemsWithAttempts = newProblems.map((p) => ({ ...p, attempts: [] }));
+            this.saveLocalProblems([...existingProblems, ...newProblemsWithAttempts]);
+            return newProblems;
+        }
+    }
+
+    async rateProblem(problemId: string, rating: number): Promise<void> {
+        if (await this.isAuthenticated()) {
+            return rateProblem(problemId, rating);
+        } else {
+            const problems = this.getLocalProblems();
+            const problemIndex = problems.findIndex((p) => p.id === problemId);
+            if (problemIndex === -1) return;
+
+            const problem = problems[problemIndex];
+
+            // Add attempt
+            const newAttempt: Attempt = {
+                id: crypto.randomUUID(),
+                problem_id: problemId,
+                rating,
+                attempted_at: new Date().toISOString(),
+                notes: null,
+                time_spent_minutes: null,
+            };
+            problem.attempts.push(newAttempt);
+
+            // Calculate next review
+            const nextReviewDate = calculateNextReview(rating);
+
+            // Update status
+            let newConsecutiveFives = problem.consecutive_fives || 0;
+            let newStatus = problem.status;
+
+            if (rating === 5) {
+                newConsecutiveFives += 1;
+                if (newConsecutiveFives >= 2) {
+                    newStatus = "mastered";
+                }
+            } else {
+                newConsecutiveFives = 0;
+            }
+
+            if (problem.status === "queued") {
+                newStatus = "active";
+            }
+
+            // Update problem
+            problems[problemIndex] = {
+                ...problem,
+                status: newStatus,
+                queue_position: newStatus === "queued" ? problem.queue_position : null,
+                next_review_date: newStatus === "mastered" ? null : nextReviewDate,
+                attempt_count: (problem.attempt_count || 0) + 1,
+                consecutive_fives: newConsecutiveFives,
+                last_rating: rating,
+                mastered_at:
+                    newStatus === "mastered" && problem.status !== "mastered"
+                        ? new Date().toISOString()
+                        : problem.mastered_at,
+            };
+
+            this.saveLocalProblems(problems);
+        }
+    }
+
+    async deleteProblem(problemId: string): Promise<void> {
+        if (await this.isAuthenticated()) {
+            return deleteProblem(problemId);
+        } else {
+            const problems = this.getLocalProblems();
+            this.saveLocalProblems(problems.filter((p) => p.id !== problemId));
+        }
+    }
+
+    async getStats() {
+        if (await this.isAuthenticated()) {
+            return getStats();
+        } else {
+            const allProblems = this.getLocalProblems();
+            const reviewProblems = await this.getReviewProblems();
+
+            const queueCount = allProblems.filter((p) => p.status === "queued").length;
+            const activeCount = allProblems.filter((p) => p.status === "active").length;
+            const masteredCount = allProblems.filter((p) => p.status === "mastered").length;
+
+            return {
+                total: allProblems.length,
+                queued: queueCount,
+                active: activeCount,
+                mastered: masteredCount,
+                dueToday: reviewProblems.length,
+                masteryRate:
+                    activeCount + masteredCount > 0
+                        ? Math.round((masteredCount / (activeCount + masteredCount)) * 100)
+                        : 0,
+            };
+        }
+    }
+}
+
+// Export the storage adapter instance
+export const storage = new StorageAdapter();

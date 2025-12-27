@@ -1,4 +1,4 @@
-import { type ProblemWithAttempts, formatRelativeDate } from "../lib/supabase";
+import { type ProblemWithAttempts, formatRelativeDate } from "../lib/database";
 
 interface ProblemCardProps {
     problem: ProblemWithAttempts;

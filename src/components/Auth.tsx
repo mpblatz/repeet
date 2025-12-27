@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/database";
 
 export default function Auth() {
     const [isSignUp, setIsSignUp] = useState(false);
@@ -36,7 +36,7 @@ export default function Auth() {
             <div className="flex flex-col m-auto border-1 p-10 space-y-8">
                 <div>
                     <p>
-                        {"<"}LeetCode Tracker{"/>"}
+                        {"<"}Repeet{"/>"}
                     </p>
                     <p>Master problems through spaced repetition</p>
                 </div>

@@ -1,4 +1,4 @@
-import { type ProblemWithAttempts } from "../lib/supabase";
+import { type ProblemWithAttempts } from "../lib/database";
 import ProblemCard from "./ProblemCard";
 
 interface ReviewListProps {
@@ -40,15 +40,15 @@ export default function ReviewList({ problems, auditProblem, onRate }: ReviewLis
             <table className="w-fit border-collapse text-center">
                 <thead>
                     <tr className="border-b border-white">
-                        <th className="w-64">Problem</th>
-                        <th className="w-24">Difficulty</th>
-                        <th className="w-32">Topic</th>
+                        <th className="w-96">Problem</th>
+                        <th className="w-32">Difficulty</th>
+                        <th className="w-48">Topic</th>
                         <th className="w-48">Last Attempt</th>
                         <th className="w-48">Last Rating</th>
                         <th className="w-32">Due Date</th>
                         <th className="w-48"># of Attempts</th>
-                        <th className="w-32">Link</th>
-                        <th className="w-48">Rate</th>
+                        <th className="w-48">Link</th>
+                        <th className="w-24">Rate</th>
                         <th className="w-16"></th>
                     </tr>
                 </thead>
