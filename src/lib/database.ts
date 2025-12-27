@@ -379,53 +379,6 @@ export const deleteProblem = async (problemId: string): Promise<void> => {
     if (error) throw error;
 };
 
-/**
- * Bulk add problems (e.g., import Neetcode 150)
- */
-export const bulkAddProblems = async (
-    problems: Array<{
-        problem_name: string;
-        difficulty: ProblemDifficulty;
-        problem_link?: string;
-        source?: string;
-        topic?: string;
-    }>
-): Promise<void> => {
-    // Get current user
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
-
-    // Get max queue position
-    const { data: maxPosData } = await supabase
-        .from("problems")
-        .select("queue_position")
-        .eq("status", "queued")
-        .order("queue_position", { ascending: false })
-        .limit(1);
-
-    const startPosition = (maxPosData?.[0]?.queue_position || 0) + 1;
-
-    // Prepare bulk insert
-    const problemsToInsert = problems.map((problem, index) => ({
-        user_id: user.id,
-        problem_name: problem.problem_name,
-        problem_link: problem.problem_link || null,
-        difficulty: problem.difficulty,
-        status: "queued" as ProblemStatus,
-        queue_position: startPosition + index,
-        source: problem.source || null,
-        topic: problem.topic || null,
-        attempt_count: 0,
-        consecutive_fives: 0,
-    }));
-
-    const { error } = await supabase.from("problems").insert(problemsToInsert);
-
-    if (error) throw error;
-};
-
 // ============================================================================
 // API Functions - User Settings
 // ============================================================================
@@ -763,6 +716,60 @@ class StorageAdapter {
                         ? Math.round((masteredCount / (activeCount + masteredCount)) * 100)
                         : 0,
             };
+        }
+    }
+
+    async checkDailyAudit(): Promise<ProblemWithAttempts | null> {
+        if (await this.isAuthenticated()) {
+            return checkDailyAudit();
+        } else {
+            const today = getTodayDate();
+            const auditKey = "repeet-audit";
+
+            // Get stored audit data
+            const storedAudit = localStorage.getItem(auditKey);
+            const auditData = storedAudit ? JSON.parse(storedAudit) : null;
+
+            // Already checked today
+            if (auditData?.last_audit_date === today) {
+                if (auditData.audit_problem_id) {
+                    const problems = this.getLocalProblems();
+                    const auditProblem = problems.find((p) => p.id === auditData.audit_problem_id);
+                    return auditProblem || null;
+                }
+                return null;
+            }
+
+            // 10% chance for audit
+            if (Math.random() < 0.1) {
+                const masteredProblems = await this.getMasteredProblems();
+
+                if (masteredProblems.length > 0) {
+                    const randomProblem = masteredProblems[Math.floor(Math.random() * masteredProblems.length)];
+
+                    // Save audit data
+                    localStorage.setItem(
+                        auditKey,
+                        JSON.stringify({
+                            last_audit_date: today,
+                            audit_problem_id: randomProblem.id,
+                        })
+                    );
+
+                    return randomProblem;
+                }
+            }
+
+            // No audit today
+            localStorage.setItem(
+                auditKey,
+                JSON.stringify({
+                    last_audit_date: today,
+                    audit_problem_id: null,
+                })
+            );
+
+            return null;
         }
     }
 }

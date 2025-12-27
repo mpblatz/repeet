@@ -8,6 +8,7 @@ interface ProblemCardProps {
     onDelete?: (problemId: string) => void;
     isAudit?: boolean;
     isMasteryAttempt?: boolean;
+    className?: string;
 }
 
 export default function ProblemCard({
@@ -18,11 +19,12 @@ export default function ProblemCard({
     onDelete,
     isAudit = false,
     isMasteryAttempt = false,
+    className,
 }: ProblemCardProps) {
     const lastAttempt = problem.attempts[problem.attempts.length - 1];
 
     return (
-        <tr className={`${isAudit ? "bg-amber-900" : ""}`}>
+        <tr className={className + ` ${isAudit ? "bg-amber-900" : ""}`}>
             {isAudit && <span>🔍 AUDIT</span>}
 
             {problem.queue_position && <td className="mr-8">{problem.queue_position}</td>}

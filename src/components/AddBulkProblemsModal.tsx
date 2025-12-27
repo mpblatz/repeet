@@ -54,20 +54,20 @@ export default function BulkImportModal({ onClose, onBulkAdd }: BulkImportModalP
     };
 
     return (
-        <div className="fixed inset-0 flex justify-center" onClick={onClose}>
+        <div className="fixed inset-0 flex justify-center bg-modal-bg" onClick={onClose}>
             <div
-                className="flex flex-col border-1 p-10 bg-zinc-800 space-y-8 w-[900px] h-fit mt-20"
+                className="mt-10 flex flex-col p-10 bg-surface rounded-md space-y-8 w-[900px] h-fit mt-20`"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex w-full justify-between">
                     <h2>Bulk Add Problems</h2>
-                    <button className="px-1" onClick={onClose}>
+                    <button className="px-3 py-1 rounded-full" onClick={onClose}>
                         X
                     </button>
                 </div>
 
                 <div>
-                    <p>💡 Quick Tips:</p>
+                    <p>Quick Tips:</p>
                     <ul>
                         <li>• Copy problems from Neetcode 150, Grind 75, or any list</li>
                         <li>• One problem per line</li>
@@ -91,25 +91,38 @@ export default function BulkImportModal({ onClose, onBulkAdd }: BulkImportModalP
                             autoFocus
                             className="w-full p-3 border"
                         />
-                        <p className="text-sm text-gray-200 mt-1">
+                        <p className="text-sm mt-1">
                             Paste problems in csv format, one per line.{" "}
                             {problemCount > 0 && `(${problemCount} problems)`}
                         </p>
                     </div>
 
                     <div className="flex space-x-8 mt-10">
-                        <button onClick={() => setText(neetcode150text)}>[ Automatically Add Neetcode 150 ]</button>
-                        <button onClick={() => setText(grind75text)}>[ Automatically Add Grind 75 ]</button>
+                        <button className="bg-bg py-2 px-4 rounded-md" onClick={() => setText(neetcode150text)}>
+                            Automatically Add Neetcode 150
+                        </button>
+                        <button className="bg-bg py-2 px-4 rounded-md" onClick={() => setText(grind75text)}>
+                            Automatically Add Grind 75
+                        </button>
                     </div>
 
                     <div className="flex space-x-2 mt-10 justify-between">
-                        <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
-                            [ Cancel ]
+                        <button
+                            type="button"
+                            className="bg-bg py-2 px-4 rounded-md"
+                            onClick={onClose}
+                            disabled={loading}
+                        >
+                            Cancel
                         </button>
-                        <button type="submit" className="btn btn-primary" disabled={loading || problemCount === 0}>
+                        <button
+                            type="submit"
+                            className="bg-bg py-2 px-4 rounded-md"
+                            disabled={loading || problemCount === 0}
+                        >
                             {loading
                                 ? "Importing..."
-                                : `[ Import ${problemCount} Problem${problemCount !== 1 ? "s" : ""} ]`}
+                                : `Import ${problemCount} Problem${problemCount !== 1 ? "s" : ""}`}
                         </button>
                     </div>
                 </form>

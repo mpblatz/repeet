@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { supabase } from "../lib/database";
 
-export default function Auth() {
+interface AuthModalProps {
+    onClose: () => void;
+}
+
+export default function AuthModal({ onClose }: AuthModalProps) {
     const [isSignUp, setIsSignUp] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -28,19 +32,16 @@ export default function Auth() {
             setError(error.message || "An error occurred");
         } finally {
             setLoading(false);
+            onClose();
         }
     };
 
     return (
-        <div className="flex h-screen">
-            <div className="flex flex-col m-auto border-1 p-10 space-y-8">
-                <div>
-                    <p>
-                        {"<"}Repeet{"/>"}
-                    </p>
-                    <p>Master problems through spaced repetition</p>
-                </div>
-
+        <div className="fixed inset-0 flex justify-center bg-modal-bg" onClick={onClose}>
+            <div
+                className="flex flex-col bg-surface rounded-md p-10 space-y-8 w-[600px] h-fit mt-20"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <h2>{isSignUp ? "Create Account" : "Sign In"}</h2>
 
                 {error && <div>{error}</div>}
@@ -76,8 +77,8 @@ export default function Auth() {
                         />
                     </div>
 
-                    <button className="mt-4 btn btn-primary" type="submit" disabled={loading}>
-                        {loading ? "Loading..." : isSignUp ? "[ Sign Up ]" : "[ Sign In ]"}
+                    <button className="mt-4 bg-bg py-2 px-4 rounded-md" type="submit" disabled={loading}>
+                        {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
                     </button>
                 </form>
 
@@ -90,8 +91,9 @@ export default function Auth() {
                             setError("");
                             setMessage("");
                         }}
+                        className="bg-bg py-2 px-4 rounded-md"
                     >
-                        {isSignUp ? "[ Sign In ]" : "[ Sign Up ]"}
+                        {isSignUp ? "Sign In" : "Sign Up"}
                     </button>
                 </div>
             </div>

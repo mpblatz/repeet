@@ -8,21 +8,12 @@ interface MasteredListProps {
 
 export default function MasteredList({ problems, onRate }: MasteredListProps) {
     if (problems.length === 0) {
-        return (
-            <div className="empty-state">
-                <div className="empty-icon">🏆</div>
-                <h3>No Mastered Problems Yet</h3>
-                <p>Keep practicing! Rate a problem 5 twice in a row to master it.</p>
-            </div>
-        );
+        return <p>No mastered problems yet. Keep practicing! Rate a problem 5 twice in a row to master it.</p>;
     }
 
     return (
         <div>
             <div className="mb-12">
-                <h2>
-                    Mastered — {problems.length} {problems.length === 1 ? "Problem" : "Problems"}
-                </h2>
                 <p>
                     Your trophy case! These problems have been rated 5 twice in a row. They may appear as random audits
                     (10% daily chance).
@@ -45,7 +36,13 @@ export default function MasteredList({ problems, onRate }: MasteredListProps) {
                 </thead>
                 <tbody></tbody>
                 {problems.map((problem) => (
-                    <ProblemCard key={problem.id} problem={problem} showRating={true} onRate={onRate} />
+                    <ProblemCard
+                        key={problem.id}
+                        problem={problem}
+                        showRating={true}
+                        onRate={onRate}
+                        className="even:bg-surface"
+                    />
                 ))}
             </table>
         </div>

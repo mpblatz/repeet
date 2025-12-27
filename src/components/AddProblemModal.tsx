@@ -39,14 +39,14 @@ export default function AddProblemModal({ onClose, onAdd }: AddProblemModalProps
     };
 
     return (
-        <div className="fixed inset-0 flex justify-center" onClick={onClose}>
+        <div className="fixed inset-0 flex justify-center bg-modal-bg" onClick={onClose}>
             <div
-                className="flex flex-col border-1 p-10 bg-zinc-800 space-y-10 w-[800px] h-fit mt-20"
+                className="flex flex-col bg-surface rounded-md p-10 space-y-10 w-[800px] h-fit mt-20"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex w-full justify-between">
                     <h2>Add Problem</h2>
-                    <button className="px-1" onClick={onClose}>
+                    <button className="px-3 py-1 rounded-full" onClick={onClose}>
                         X
                     </button>
                 </div>
@@ -114,11 +114,16 @@ export default function AddProblemModal({ onClose, onAdd }: AddProblemModalProps
                     </div>
 
                     <div className="flex space-x-2 mt-10 justify-between">
-                        <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
-                            [ Cancel ]
+                        <button
+                            type="button"
+                            className="bg-bg py-2 px-4 rounded-md"
+                            onClick={onClose}
+                            disabled={loading}
+                        >
+                            Cancel
                         </button>
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? "Adding..." : "[ Add Problem ]"}
+                        <button type="submit" className="bg-bg py-2 px-4 rounded-md" disabled={loading}>
+                            {loading ? "Adding..." : "Add Problem"}
                         </button>
                     </div>
                 </form>

@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
-:root {
+@theme {
+    --color-bg: #362b28ff;
+    --color-surface: #594744ff;
+    --color-tertiary: #a36d62ff;
+    --color-accent: #e8ac84ff;
+    --color-text: #f7f4f2ff;
+    --color-modal-bg: rgba(0, 0, 0, 0.2);
+    --color-bg-list: #3d302c;
+}
+
+html {
+    background-color: #362b28ff;
     font-family: monospace;
-    line-height: 1.5;
-    font-weight: 400;
-
-    color-scheme: light dark;
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
 }
 
 .difficulty-Easy {
@@ -29,6 +29,6 @@
 
 a:hover,
 button:hover {
-    background-color: aliceblue;
-    color: #242424;
+    background-color: var(--color-accent);
+    color: var(--color-bg);
 }

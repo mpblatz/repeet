@@ -9,22 +9,13 @@ interface QueueListProps {
 
 export default function QueueList({ problems, onRate, onDelete }: QueueListProps) {
     if (problems.length === 0) {
-        return (
-            <div className="empty-state">
-                <div className="empty-icon">📋</div>
-                <h3>Queue is Empty</h3>
-                <p>Add problems to your queue to get started. Try importing Neetcode 150 or Grind 75!</p>
-            </div>
-        );
+        return <p>Add problems to your queue to get started. Try importing Neetcode 150 or Grind 75!</p>;
     }
 
     return (
         <div>
             <div className="mb-12">
-                <h2>
-                    Queue — {problems.length} {problems.length === 1 ? "Problem" : "Problems"}
-                </h2>
-                <p className="list-description">
+                <p>
                     These are problems you haven't attempted yet. Work through them in order, or jump ahead to any
                     problem.
                 </p>
@@ -49,6 +40,7 @@ export default function QueueList({ problems, onRate, onDelete }: QueueListProps
                             showDelete={true}
                             onRate={onRate}
                             onDelete={onDelete}
+                            className="even:bg-surface"
                         />
                     ))}
                 </tbody>

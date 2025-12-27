@@ -17,21 +17,12 @@ export default function ReviewList({ problems, auditProblem, onRate }: ReviewLis
     const totalProblems = problems.length + (auditProblem ? 1 : 0);
 
     if (totalProblems === 0) {
-        return (
-            <div className="empty-state">
-                <div className="empty-icon">🎉</div>
-                <h3>All Done!</h3>
-                <p>No problems due today. Check back tomorrow or add new problems to your queue.</p>
-            </div>
-        );
+        return <p>No problems left with a pending review. Attempt problems from your queue to populate this list.</p>;
     }
 
     return (
         <div>
             <div className="mb-12">
-                <h2>
-                    Review — {totalProblems} {totalProblems === 1 ? "Problem" : "Problems"} Due Today
-                </h2>
                 <p>Complete these problems and rate yourself 1-5. Problems marked with ★ are mastery attempts.</p>
             </div>
 
@@ -61,6 +52,7 @@ export default function ReviewList({ problems, auditProblem, onRate }: ReviewLis
                             showRating={true}
                             onRate={onRate}
                             isMasteryAttempt={problem.isMasteryAttempt}
+                            className="even:bg-surface"
                         />
                     ))}
                 </tbody>
