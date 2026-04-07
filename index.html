@@ -14,9 +14,9 @@
         <script>
             // Apply theme before React renders to prevent flash
             (function() {
-                var theme = localStorage.getItem('repeet-theme') || 'dark';
+                var theme = localStorage.getItem('repeet-theme') || 'light';
                 document.getElementById('root').setAttribute('data-theme', theme);
-                document.documentElement.style.backgroundColor = theme === 'dark' ? '#09090b' : '#f8f8f8';
+                document.documentElement.style.backgroundColor = theme === 'light' ? '#f8f8f8' : '#09090b';
             })();
         </script>
         <script type="module" src="/src/main.tsx"></script>

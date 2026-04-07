@@ -20,7 +20,7 @@ interface Toast {
 function getInitialTheme(): string {
     const stored = localStorage.getItem("repeet-theme");
     if (stored === "light" || stored === "dark") return stored;
-    return "dark";
+    return "light";
 }
 
 function applyTheme(theme: string) {
