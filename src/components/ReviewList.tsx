@@ -8,7 +8,6 @@ interface ReviewListProps {
 }
 
 export default function ReviewList({ problems, auditProblem, onRate }: ReviewListProps) {
-    // Check if problems are mastery attempts (last rating was 5, consecutive_fives = 1)
     const problemsWithFlags = problems.map((problem) => ({
         ...problem,
         isMasteryAttempt: problem.consecutive_fives === 1 && problem.last_rating === 5,
@@ -17,46 +16,60 @@ export default function ReviewList({ problems, auditProblem, onRate }: ReviewLis
     const totalProblems = problems.length + (auditProblem ? 1 : 0);
 
     if (totalProblems === 0) {
-        return <p>No problems left with a pending review. Attempt problems from your queue to populate this list.</p>;
+        return (
+            <p style={{ color: "var(--text-muted)", fontFamily: "IBM Plex Sans, sans-serif" }}>
+                No problems left with a pending review. Attempt problems from your queue to populate this list.
+            </p>
+        );
     }
 
     return (
         <div>
-            <div className="mb-12">
-                <p>Complete these problems and rate yourself 1-5. Problems marked with ★ are mastery attempts.</p>
-            </div>
+            <p style={{
+                color: "var(--text-muted)",
+                fontSize: 13,
+                marginBottom: 24,
+            }}>
+                Complete these problems and rate yourself 1-5. Problems marked with ★ are mastery attempts.
+            </p>
 
-            {/* Audit Problem (shown first if exists) */}
-            {auditProblem && <ProblemCard problem={auditProblem} showRating={true} onRate={onRate} isAudit={true} />}
-            <table className="w-fit border-collapse text-center">
-                <thead>
-                    <tr className="border-b border-white">
-                        <th className="w-96">Problem</th>
-                        <th className="w-32">Difficulty</th>
-                        <th className="w-48">Topic</th>
-                        <th className="w-48">Last Attempt</th>
-                        <th className="w-48">Last Rating</th>
-                        <th className="w-32">Due Date</th>
-                        <th className="w-48"># of Attempts</th>
-                        <th className="w-48">Link</th>
-                        <th className="w-24">Rate</th>
-                        <th className="w-16"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {/* Regular Review Problems */}
-                    {problemsWithFlags.map((problem) => (
-                        <ProblemCard
-                            key={problem.id}
-                            problem={problem}
-                            showRating={true}
-                            onRate={onRate}
-                            isMasteryAttempt={problem.isMasteryAttempt}
-                            className="even:bg-surface"
-                        />
-                    ))}
-                </tbody>
-            </table>
+            <div style={{
+                background: "var(--card-bg)",
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                overflow: "hidden",
+                boxShadow: "var(--shadow)",
+            }}>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Problem</th>
+                            <th>Difficulty</th>
+                            <th>Topic</th>
+                            <th>Last Attempt</th>
+                            <th>Last Rating</th>
+                            <th>Due</th>
+                            <th>Attempts</th>
+                            <th>Link</th>
+                            <th>Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {auditProblem && (
+                            <ProblemCard problem={auditProblem} showRating={true} onRate={onRate} isAudit={true} />
+                        )}
+                        {problemsWithFlags.map((problem) => (
+                            <ProblemCard
+                                key={problem.id}
+                                problem={problem}
+                                showRating={true}
+                                onRate={onRate}
+                                isMasteryAttempt={problem.isMasteryAttempt}
+                            />
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }

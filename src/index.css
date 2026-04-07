@@ -1,34 +1,255 @@
 @import "tailwindcss";
 
-@theme {
-    --color-bg: #362b28ff;
-    --color-surface: #594744ff;
-    --color-tertiary: #a36d62ff;
-    --color-accent: #e8ac84ff;
-    --color-text: #f7f4f2ff;
-    --color-modal-bg: rgba(0, 0, 0, 0.2);
-    --color-bg-list: #3d302c;
+/* ============================================================================
+   Design System — Light & Dark Themes
+   ============================================================================ */
+
+[data-theme="light"] {
+    --bg: #f8f8f8;
+    --card-bg: #ffffff;
+    --text: #1a1a1a;
+    --text-muted: #6b7280;
+    --text-faint: #9ca3af;
+    --text-very-faint: #c4c4c4;
+    --accent: #2563eb;
+    --link-color: #ff5f15;
+    --link-hover: #ea5713;
+    --border: rgba(0, 0, 0, 0.08);
+    --border-hover: rgba(0, 0, 0, 0.14);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+    --btn-bg: rgba(0, 0, 0, 0.03);
+    --toggle-bg: rgba(0, 0, 0, 0.04);
+    --toggle-active: #fff;
+    --toggle-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --divider: rgba(0, 0, 0, 0.06);
+    --image-bg: #e8edf3;
+    --tag-saturation: 62%;
+    --tag-lightness: 38%;
+    --modal-bg: rgba(0, 0, 0, 0.3);
+    --input-bg: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.15);
+    --difficulty-easy: #16a34a;
+    --difficulty-medium: #d97706;
+    --difficulty-hard: #dc2626;
 }
+
+[data-theme="dark"] {
+    --bg: #09090b;
+    --card-bg: #111113;
+    --text: #f0f0f0;
+    --text-muted: #9a9a9a;
+    --text-faint: #555;
+    --text-very-faint: #333;
+    --accent: #60a5fa;
+    --link-color: #ff5f15;
+    --link-hover: #ff7a40;
+    --border: rgba(255, 255, 255, 0.06);
+    --border-hover: rgba(255, 255, 255, 0.12);
+    --shadow: none;
+    --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.3);
+    --btn-bg: rgba(255, 255, 255, 0.04);
+    --toggle-bg: rgba(255, 255, 255, 0.06);
+    --toggle-active: rgba(255, 255, 255, 0.12);
+    --toggle-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --divider: rgba(255, 255, 255, 0.04);
+    --image-bg: #1a1e24;
+    --tag-saturation: 70%;
+    --tag-lightness: 62%;
+    --modal-bg: rgba(0, 0, 0, 0.6);
+    --input-bg: rgba(255, 255, 255, 0.04);
+    --input-border: rgba(255, 255, 255, 0.1);
+    --difficulty-easy: #4ade80;
+    --difficulty-medium: #fbbf24;
+    --difficulty-hard: #f87171;
+}
+
+/* ============================================================================
+   Base Styles
+   ============================================================================ */
 
 html {
-    background-color: #362b28ff;
-    font-family: monospace;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    transition: background-color 0.35s ease, color 0.35s ease;
 }
 
+body {
+    margin: 0;
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+    font-family: "Space Mono", monospace;
+    font-weight: 700;
+    margin: 0;
+}
+
+h1 {
+    font-size: 28px;
+    letter-spacing: -0.03em;
+}
+
+h2 {
+    font-size: 22px;
+    letter-spacing: -0.02em;
+}
+
+h3 {
+    font-size: 16px;
+    letter-spacing: -0.02em;
+}
+
+/* ============================================================================
+   Interactive Elements
+   ============================================================================ */
+
+a {
+    color: var(--link-color);
+    text-underline-offset: 3px;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--link-hover);
+    background: none;
+}
+
+button {
+    cursor: pointer;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    transition: all 0.2s ease;
+    border: none;
+    background: none;
+    color: var(--text);
+}
+
+button:hover {
+    background: none;
+    color: var(--text);
+}
+
+/* ============================================================================
+   Form Inputs
+   ============================================================================ */
+
+input, select, textarea {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 14px;
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--link-color);
+}
+
+input::placeholder, textarea::placeholder {
+    color: var(--text-faint);
+}
+
+select option {
+    background: var(--card-bg);
+    color: var(--text);
+}
+
+/* ============================================================================
+   Table Styles
+   ============================================================================ */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead th {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--divider);
+}
+
+tbody tr {
+    border-bottom: 1px solid var(--divider);
+    transition: background-color 0.15s ease;
+}
+
+tbody tr:hover {
+    background-color: var(--btn-bg);
+}
+
+tbody td {
+    padding: 10px 12px;
+    font-size: 14px;
+}
+
+/* ============================================================================
+   Difficulty Badges
+   ============================================================================ */
+
 .difficulty-Easy {
-    color: green;
+    color: var(--difficulty-easy);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
 }
 
 .difficulty-Medium {
-    color: orange;
+    color: var(--difficulty-medium);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
 }
 
 .difficulty-Hard {
-    color: red;
+    color: var(--difficulty-hard);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
 }
 
-a:hover,
-button:hover {
-    background-color: var(--color-accent);
-    color: var(--color-bg);
+/* ============================================================================
+   Animations
+   ============================================================================ */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease both;
 }

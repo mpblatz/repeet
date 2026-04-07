@@ -9,42 +9,56 @@ interface QueueListProps {
 
 export default function QueueList({ problems, onRate, onDelete }: QueueListProps) {
     if (problems.length === 0) {
-        return <p>Add problems to your queue to get started. Try importing Neetcode 150 or Grind 75!</p>;
+        return (
+            <p style={{ color: "var(--text-muted)", fontFamily: "IBM Plex Sans, sans-serif" }}>
+                Add problems to your queue to get started. Try importing Neetcode 150 or Grind 75!
+            </p>
+        );
     }
 
     return (
         <div>
-            <div className="mb-12">
-                <p>
-                    These are problems you haven't attempted yet. Work through them in order, or jump ahead to any
-                    problem.
-                </p>
+            <p style={{
+                color: "var(--text-muted)",
+                fontSize: 13,
+                marginBottom: 24,
+            }}>
+                These are problems you haven't attempted yet. Work through them in order, or jump ahead to any problem.
+            </p>
+
+            <div style={{
+                background: "var(--card-bg)",
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                overflow: "hidden",
+                boxShadow: "var(--shadow)",
+            }}>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style={{ width: 50 }}>#</th>
+                            <th>Problem</th>
+                            <th>Difficulty</th>
+                            <th>Topic</th>
+                            <th>Link</th>
+                            <th>Rate</th>
+                            <th style={{ width: 40 }}></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {problems.map((problem) => (
+                            <ProblemCard
+                                key={problem.id}
+                                problem={problem}
+                                showRating={true}
+                                showDelete={true}
+                                onRate={onRate}
+                                onDelete={onDelete}
+                            />
+                        ))}
+                    </tbody>
+                </table>
             </div>
-            <table className="w-fit border-collapse text-center">
-                <thead>
-                    <tr className="border-b border-white">
-                        <th className="text-left py-2 px-4 w-16">#</th>
-                        <th className="w-96">Problem</th>
-                        <th className="w-24">Difficulty</th>
-                        <th className="w-80">Topic</th>
-                        <th className="w-32">Link</th>
-                        <th className="w-48">Rate</th>
-                        <th className="w-16"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {problems.map((problem) => (
-                        <ProblemCard
-                            problem={problem}
-                            showRating={true}
-                            showDelete={true}
-                            onRate={onRate}
-                            onDelete={onDelete}
-                            className="even:bg-surface"
-                        />
-                    ))}
-                </tbody>
-            </table>
         </div>
     );
 }

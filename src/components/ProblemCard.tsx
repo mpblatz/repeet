@@ -11,6 +11,14 @@ interface ProblemCardProps {
     className?: string;
 }
 
+const ratingColors: Record<number, string> = {
+    1: "#ef4444",
+    2: "#f97316",
+    3: "#eab308",
+    4: "#22c55e",
+    5: "#10b981",
+};
+
 export default function ProblemCard({
     problem,
     showRating = false,
@@ -19,28 +27,75 @@ export default function ProblemCard({
     onDelete,
     isAudit = false,
     isMasteryAttempt = false,
-    className,
 }: ProblemCardProps) {
     const lastAttempt = problem.attempts[problem.attempts.length - 1];
 
     return (
-        <tr className={className + ` ${isAudit ? "bg-amber-900" : ""}`}>
-            {isAudit && <span>🔍 AUDIT</span>}
+        <tr style={{
+            borderBottom: "1px solid var(--divider)",
+            transition: "background-color 0.15s ease",
+            ...(isAudit ? { background: "color-mix(in srgb, var(--link-color) 8%, transparent)" } : {}),
+        }}>
+            {isAudit && (
+                <td style={{
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: 10,
+                    color: "var(--link-color)",
+                    fontWeight: 600,
+                    letterSpacing: "0.05em",
+                    padding: "10px 12px",
+                }}>
+                    AUDIT
+                </td>
+            )}
 
-            {problem.queue_position && <td className="mr-8">{problem.queue_position}</td>}
+            {problem.queue_position && (
+                <td style={{
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: 11,
+                    color: "var(--text-faint)",
+                    padding: "10px 12px",
+                }}>
+                    {problem.queue_position}
+                </td>
+            )}
 
-            <td className={`py-4 ${isMasteryAttempt ? "italic" : ""}`}>
-                {isMasteryAttempt && "★ "}
+            <td style={{
+                padding: "10px 12px",
+                fontWeight: isMasteryAttempt ? 500 : 400,
+                fontStyle: isMasteryAttempt ? "italic" : "normal",
+            }}>
+                {isMasteryAttempt && (
+                    <span style={{ color: "var(--link-color)", marginRight: 4 }}>★</span>
+                )}
                 {problem.problem_name}
-                {isMasteryAttempt && " ★"}
+                {isMasteryAttempt && (
+                    <span style={{ color: "var(--link-color)", marginLeft: 4 }}>★</span>
+                )}
             </td>
 
-            <td className={`difficulty-${problem.difficulty}`}>{problem.difficulty}</td>
+            <td style={{ padding: "10px 12px" }}>
+                <span className={`difficulty-${problem.difficulty}`}>
+                    {problem.difficulty}
+                </span>
+            </td>
 
-            {problem.topic ? <td>{problem.topic}</td> : <td></td>}
+            <td style={{
+                padding: "10px 12px",
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: 11,
+                color: "var(--text-muted)",
+            }}>
+                {problem.topic || ""}
+            </td>
 
             {lastAttempt && (
-                <td>
+                <td style={{
+                    padding: "10px 12px",
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: 11,
+                    color: "var(--text-faint)",
+                }}>
                     {new Date(lastAttempt.attempted_at).toLocaleDateString("en-US", {
                         month: "2-digit",
                         day: "2-digit",
@@ -49,39 +104,110 @@ export default function ProblemCard({
                 </td>
             )}
 
-            {lastAttempt && <td>{lastAttempt.rating}</td>}
+            {lastAttempt && (
+                <td style={{
+                    padding: "10px 12px",
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: ratingColors[lastAttempt.rating] || "var(--text-muted)",
+                }}>
+                    {lastAttempt.rating}
+                </td>
+            )}
 
-            {problem.next_review_date && <td>{formatRelativeDate(problem.next_review_date)}</td>}
+            {problem.next_review_date && (
+                <td style={{
+                    padding: "10px 12px",
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: 11,
+                    color: "var(--text-muted)",
+                }}>
+                    {formatRelativeDate(problem.next_review_date)}
+                </td>
+            )}
 
-            {problem.attempt_count > 0 && <td>{problem.attempt_count}</td>}
+            {problem.attempt_count > 0 && (
+                <td style={{
+                    padding: "10px 12px",
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: 11,
+                    color: "var(--text-faint)",
+                }}>
+                    {problem.attempt_count}
+                </td>
+            )}
 
-            <td>
+            <td style={{ padding: "10px 12px" }}>
                 {problem.problem_link && (
-                    <a href={problem.problem_link} target="_blank" rel="noopener noreferrer" className="problem-link">
-                        [ Open 🔗 ]
+                    <a
+                        href={problem.problem_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                            fontFamily: "JetBrains Mono, monospace",
+                            fontSize: 11,
+                            textDecoration: "none",
+                            color: "var(--text-faint)",
+                            transition: "color 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--link-color)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-faint)")}
+                    >
+                        Open ↗
                     </a>
                 )}
             </td>
 
             {showRating && onRate && (
-                <td className="flex px-1 py-4 justify-center">
-                    {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                            key={rating}
-                            className={`rating-btn rating-btn-${rating} px-1`}
-                            onClick={() => onRate(problem.id, rating)}
-                            title={`Rate ${rating}`}
-                        >
-                            {rating}
-                        </button>
-                    ))}
+                <td style={{ padding: "10px 8px" }}>
+                    <div style={{ display: "flex", gap: 4 }}>
+                        {[1, 2, 3, 4, 5].map((rating) => (
+                            <button
+                                key={rating}
+                                onClick={() => onRate(problem.id, rating)}
+                                title={`Rate ${rating}`}
+                                style={{
+                                    width: 26,
+                                    height: 26,
+                                    borderRadius: 5,
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    background: `color-mix(in srgb, ${ratingColors[rating]} 10%, transparent)`,
+                                    color: ratingColors[rating],
+                                    border: `1px solid color-mix(in srgb, ${ratingColors[rating]} 20%, transparent)`,
+                                    transition: "all 0.15s ease",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = `color-mix(in srgb, ${ratingColors[rating]} 20%, transparent)`;
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = `color-mix(in srgb, ${ratingColors[rating]} 10%, transparent)`;
+                                }}
+                            >
+                                {rating}
+                            </button>
+                        ))}
+                    </div>
                 </td>
             )}
 
             {showDelete && onDelete && (
-                <td>
-                    <button className="px-1" onClick={() => onDelete(problem.id)} title="Delete problem">
-                        🗑️
+                <td style={{ padding: "10px 8px" }}>
+                    <button
+                        onClick={() => onDelete(problem.id)}
+                        title="Delete problem"
+                        style={{
+                            color: "var(--text-very-faint)",
+                            fontSize: 13,
+                            padding: "2px 6px",
+                            borderRadius: 5,
+                            transition: "color 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--difficulty-hard)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-very-faint)")}
+                    >
+                        ✕
                     </button>
                 </td>
             )}

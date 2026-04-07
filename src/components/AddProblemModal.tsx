@@ -12,6 +12,57 @@ interface AddProblemModalProps {
     }) => Promise<void>;
 }
 
+const modalOverlay: React.CSSProperties = {
+    position: "fixed",
+    inset: 0,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    background: "var(--modal-bg)",
+    zIndex: 50,
+    paddingTop: 80,
+};
+
+const modalCard: React.CSSProperties = {
+    background: "var(--card-bg)",
+    border: "1px solid var(--border)",
+    borderRadius: 14,
+    padding: "32px",
+    width: 560,
+    maxWidth: "90vw",
+    boxShadow: "var(--shadow-hover)",
+};
+
+const labelStyle: React.CSSProperties = {
+    fontFamily: "JetBrains Mono, monospace",
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: "0.04em",
+    color: "var(--text-muted)",
+    textTransform: "uppercase",
+    marginBottom: 6,
+    display: "block",
+};
+
+const btnStyle: React.CSSProperties = {
+    background: "var(--btn-bg)",
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    padding: "7px 14px",
+    color: "var(--text-muted)",
+    fontFamily: "JetBrains Mono, monospace",
+    fontSize: 12,
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+};
+
+const btnPrimary: React.CSSProperties = {
+    ...btnStyle,
+    background: "color-mix(in srgb, var(--link-color) 10%, transparent)",
+    borderColor: "color-mix(in srgb, var(--link-color) 20%, transparent)",
+    color: "var(--link-color)",
+};
+
 export default function AddProblemModal({ onClose, onAdd }: AddProblemModalProps) {
     const [name, setName] = useState("");
     const [link, setLink] = useState("");
@@ -22,7 +73,6 @@ export default function AddProblemModal({ onClose, onAdd }: AddProblemModalProps
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-
         try {
             await onAdd({
                 problem_name: name,
@@ -39,22 +89,19 @@ export default function AddProblemModal({ onClose, onAdd }: AddProblemModalProps
     };
 
     return (
-        <div className="fixed inset-0 flex justify-center bg-modal-bg" onClick={onClose}>
-            <div
-                className="flex flex-col bg-surface rounded-md p-10 space-y-10 w-[800px] h-fit mt-20"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="flex w-full justify-between">
+        <div className="animate-fade-in" style={modalOverlay} onClick={onClose}>
+            <div style={modalCard} onClick={(e) => e.stopPropagation()}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
                     <h2>Add Problem</h2>
-                    <button className="px-3 py-1 rounded-full" onClick={onClose}>
-                        X
+                    <button onClick={onClose} style={{ color: "var(--text-faint)", fontSize: 16, padding: "4px 8px" }}>
+                        ✕
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-col space-y-4">
-                    <div className="flex space-x-2">
-                        <label htmlFor="problem-name" className="whitespace-nowrap">
-                            Problem Name <span className="text-orange-500">*</span>
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    <div>
+                        <label htmlFor="problem-name" style={labelStyle}>
+                            Problem Name <span style={{ color: "var(--link-color)" }}>*</span>
                         </label>
                         <input
                             id="problem-name"
@@ -64,13 +111,13 @@ export default function AddProblemModal({ onClose, onAdd }: AddProblemModalProps
                             placeholder="Two Sum"
                             required
                             autoFocus
-                            className="border-1 px-2 w-full"
+                            style={{ width: "100%", boxSizing: "border-box" }}
                         />
                     </div>
 
-                    <div className="flex space-x-2">
-                        <label htmlFor="problem-link" className="whitespace-nowrap">
-                            LeetCode Link (optional)
+                    <div>
+                        <label htmlFor="problem-link" style={labelStyle}>
+                            LeetCode Link
                         </label>
                         <input
                             id="problem-link"
@@ -78,20 +125,20 @@ export default function AddProblemModal({ onClose, onAdd }: AddProblemModalProps
                             value={link}
                             onChange={(e) => setLink(e.target.value)}
                             placeholder="https://leetcode.com/problems/two-sum/"
-                            className="border-1 px-2 w-full"
+                            style={{ width: "100%", boxSizing: "border-box" }}
                         />
                     </div>
 
-                    <div className="flex space-x-2">
-                        <label htmlFor="difficulty" className="whitespace-nowrap">
-                            Difficulty <span className="text-orange-500">*</span>
+                    <div>
+                        <label htmlFor="difficulty" style={labelStyle}>
+                            Difficulty <span style={{ color: "var(--link-color)" }}>*</span>
                         </label>
                         <select
                             id="difficulty"
                             value={difficulty}
                             onChange={(e) => setDifficulty(e.target.value as ProblemDifficulty)}
-                            className="border-1 px-2 w-full"
                             required
+                            style={{ width: "100%", boxSizing: "border-box" }}
                         >
                             <option value="Easy">Easy</option>
                             <option value="Medium">Medium</option>
@@ -99,30 +146,25 @@ export default function AddProblemModal({ onClose, onAdd }: AddProblemModalProps
                         </select>
                     </div>
 
-                    <div className="flex space-x-2">
-                        <label htmlFor="topic" className="whitespace-nowrap">
-                            Topic (optional)
+                    <div>
+                        <label htmlFor="topic" style={labelStyle}>
+                            Topic
                         </label>
                         <input
                             id="topic"
                             type="text"
                             value={topic}
                             onChange={(e) => setTopic(e.target.value)}
-                            placeholder="Arrays, Trees, Dynamic Programming, etc."
-                            className="border-1 px-2 w-full"
+                            placeholder="Arrays, Trees, Dynamic Programming..."
+                            style={{ width: "100%", boxSizing: "border-box" }}
                         />
                     </div>
 
-                    <div className="flex space-x-2 mt-10 justify-between">
-                        <button
-                            type="button"
-                            className="bg-bg py-2 px-4 rounded-md"
-                            onClick={onClose}
-                            disabled={loading}
-                        >
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+                        <button type="button" style={btnStyle} onClick={onClose} disabled={loading}>
                             Cancel
                         </button>
-                        <button type="submit" className="bg-bg py-2 px-4 rounded-md" disabled={loading}>
+                        <button type="submit" style={btnPrimary} disabled={loading}>
                             {loading ? "Adding..." : "Add Problem"}
                         </button>
                     </div>
