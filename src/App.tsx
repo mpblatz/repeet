@@ -8,6 +8,7 @@ import MasteredList from "./components/MasteredList";
 import AddProblemModal from "./components/AddProblemModal";
 import AddBulkProblemsModal from "./components/AddBulkProblemsModal";
 import RatingGuideModal from "./components/RatingGuideModal";
+import { MoonIcon, SunIcon } from "lucide-react";
 
 type View = "queue" | "review" | "mastered";
 
@@ -50,30 +51,36 @@ function ThemeToggle() {
             <button
                 onClick={() => toggle("light")}
                 style={{
-                    padding: "4px 10px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 30,
+                    height: 26,
                     borderRadius: 6,
-                    fontSize: 13,
                     background: theme === "light" ? "var(--toggle-active)" : "transparent",
                     boxShadow: theme === "light" ? "var(--toggle-shadow)" : "none",
                     color: theme === "light" ? "var(--text)" : "var(--text-faint)",
                     transition: "all 0.15s ease",
                 }}
             >
-                ☀
+                <SunIcon size={14} />
             </button>
             <button
                 onClick={() => toggle("dark")}
                 style={{
-                    padding: "4px 10px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 30,
+                    height: 26,
                     borderRadius: 6,
-                    fontSize: 13,
                     background: theme === "dark" ? "var(--toggle-active)" : "transparent",
                     boxShadow: theme === "dark" ? "var(--toggle-shadow)" : "none",
                     color: theme === "dark" ? "var(--text)" : "var(--text-faint)",
                     transition: "all 0.15s ease",
                 }}
             >
-                ☾
+                <MoonIcon size={14} />
             </button>
         </div>
     );
@@ -83,15 +90,17 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
     if (toasts.length === 0) return null;
 
     return (
-        <div style={{
-            position: "fixed",
-            top: 20,
-            right: 20,
-            zIndex: 100,
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-        }}>
+        <div
+            style={{
+                position: "fixed",
+                top: 20,
+                right: 20,
+                zIndex: 100,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+            }}
+        >
             {toasts.map((toast) => (
                 <div
                     key={toast.id}
@@ -103,12 +112,15 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
                         fontSize: 12,
                         maxWidth: 360,
                         cursor: "pointer",
-                        background: toast.type === "error"
-                            ? "color-mix(in srgb, #ef4444 10%, var(--card-bg))"
-                            : "color-mix(in srgb, #22c55e 10%, var(--card-bg))",
-                        border: `1px solid ${toast.type === "error"
-                            ? "color-mix(in srgb, #ef4444 20%, transparent)"
-                            : "color-mix(in srgb, #22c55e 20%, transparent)"}`,
+                        background:
+                            toast.type === "error"
+                                ? "color-mix(in srgb, #ef4444 10%, var(--card-bg))"
+                                : "color-mix(in srgb, #22c55e 10%, var(--card-bg))",
+                        border: `1px solid ${
+                            toast.type === "error"
+                                ? "color-mix(in srgb, #ef4444 20%, transparent)"
+                                : "color-mix(in srgb, #22c55e 20%, transparent)"
+                        }`,
                         color: toast.type === "error" ? "#ef4444" : "#22c55e",
                         boxShadow: "var(--shadow-hover)",
                     }}
@@ -219,7 +231,7 @@ function App() {
             difficulty: ProblemDifficulty;
             source?: string;
             topic?: string;
-        }>
+        }>,
     ) => {
         try {
             await storage.addProblems(problems);
@@ -278,7 +290,15 @@ function App() {
 
     if (loading) {
         return (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "var(--text-muted)" }}>
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100vh",
+                    color: "var(--text-muted)",
+                }}
+            >
                 <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 13 }}>Loading...</p>
             </div>
         );
@@ -298,12 +318,14 @@ function App() {
                         <ThemeToggle />
                         {session ? (
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                <span style={{
-                                    fontFamily: "JetBrains Mono, monospace",
-                                    fontSize: 11,
-                                    color: "var(--text-muted)",
-                                    letterSpacing: "0.02em",
-                                }}>
+                                <span
+                                    style={{
+                                        fontFamily: "JetBrains Mono, monospace",
+                                        fontSize: 11,
+                                        color: "var(--text-muted)",
+                                        letterSpacing: "0.02em",
+                                    }}
+                                >
                                     {session.user.email}
                                 </span>
                                 <button
@@ -348,13 +370,15 @@ function App() {
                         animationDelay: "0.08s",
                     }}
                 >
-                    <div style={{
-                        display: "flex",
-                        background: "var(--toggle-bg)",
-                        borderRadius: 8,
-                        padding: 3,
-                        gap: 2,
-                    }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            background: "var(--toggle-bg)",
+                            borderRadius: 8,
+                            padding: 3,
+                            gap: 2,
+                        }}
+                    >
                         {views.map((v) => (
                             <button
                                 key={v.key}
@@ -371,11 +395,13 @@ function App() {
                                 }}
                             >
                                 {v.label}
-                                <span style={{
-                                    marginLeft: 6,
-                                    fontSize: 10,
-                                    color: currentView === v.key ? "var(--text-muted)" : "var(--text-very-faint)",
-                                }}>
+                                <span
+                                    style={{
+                                        marginLeft: 6,
+                                        fontSize: 10,
+                                        color: currentView === v.key ? "var(--text-muted)" : "var(--text-very-faint)",
+                                    }}
+                                >
                                     {v.count}
                                 </span>
                             </button>
@@ -406,18 +432,17 @@ function App() {
                 </nav>
 
                 {/* Main Content */}
-                <main
-                    className="animate-fade-in-up"
-                    style={{ animationDelay: "0.16s" }}
-                >
+                <main className="animate-fade-in-up" style={{ animationDelay: "0.16s" }}>
                     {isLoadingData ? (
-                        <div style={{
-                            textAlign: "center",
-                            padding: 64,
-                            color: "var(--text-faint)",
-                            fontFamily: "JetBrains Mono, monospace",
-                            fontSize: 12,
-                        }}>
+                        <div
+                            style={{
+                                textAlign: "center",
+                                padding: 64,
+                                color: "var(--text-faint)",
+                                fontFamily: "JetBrains Mono, monospace",
+                                fontSize: 12,
+                            }}
+                        >
                             Loading problems...
                         </div>
                     ) : (
@@ -444,20 +469,24 @@ function App() {
                 </main>
 
                 {/* Footer */}
-                <footer style={{
-                    marginTop: 64,
-                    paddingTop: 24,
-                    borderTop: "1px solid var(--divider)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                }}>
-                    <span style={{
-                        fontFamily: "JetBrains Mono, monospace",
-                        fontSize: 11,
-                        color: "var(--text-very-faint)",
-                        letterSpacing: "0.03em",
-                    }}>
+                <footer
+                    style={{
+                        marginTop: 64,
+                        paddingTop: 24,
+                        borderTop: "1px solid var(--divider)",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                    }}
+                >
+                    <span
+                        style={{
+                            fontFamily: "JetBrains Mono, monospace",
+                            fontSize: 11,
+                            color: "var(--text-very-faint)",
+                            letterSpacing: "0.03em",
+                        }}
+                    >
                         Repeet — spaced repetition for LeetCode
                     </span>
                 </footer>

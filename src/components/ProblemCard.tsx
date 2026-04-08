@@ -8,6 +8,7 @@ interface ProblemCardProps {
     onDelete?: (problemId: string) => void;
     isAudit?: boolean;
     isMasteryAttempt?: boolean;
+    rowNumber?: number;
     className?: string;
 }
 
@@ -27,6 +28,7 @@ export default function ProblemCard({
     onDelete,
     isAudit = false,
     isMasteryAttempt = false,
+    rowNumber,
 }: ProblemCardProps) {
     const lastAttempt = problem.attempts[problem.attempts.length - 1];
 
@@ -36,6 +38,17 @@ export default function ProblemCard({
             transition: "background-color 0.15s ease",
             ...(isAudit ? { background: "color-mix(in srgb, var(--link-color) 8%, transparent)" } : {}),
         }}>
+            {rowNumber !== undefined && (
+                <td style={{
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: 11,
+                    color: "var(--text-faint)",
+                    padding: "10px 12px",
+                }}>
+                    {rowNumber}
+                </td>
+            )}
+
             {isAudit && (
                 <td style={{
                     fontFamily: "JetBrains Mono, monospace",

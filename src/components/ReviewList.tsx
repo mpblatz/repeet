@@ -43,6 +43,7 @@ export default function ReviewList({ problems, auditProblem, onRate }: ReviewLis
                 <table>
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Problem</th>
                             <th>Difficulty</th>
                             <th>Topic</th>
@@ -56,15 +57,16 @@ export default function ReviewList({ problems, auditProblem, onRate }: ReviewLis
                     </thead>
                     <tbody>
                         {auditProblem && (
-                            <ProblemCard problem={auditProblem} showRating={true} onRate={onRate} isAudit={true} />
+                            <ProblemCard problem={auditProblem} showRating={true} onRate={onRate} isAudit={true} rowNumber={1} />
                         )}
-                        {problemsWithFlags.map((problem) => (
+                        {problemsWithFlags.map((problem, i) => (
                             <ProblemCard
                                 key={problem.id}
                                 problem={problem}
                                 showRating={true}
                                 onRate={onRate}
                                 isMasteryAttempt={problem.isMasteryAttempt}
+                                rowNumber={auditProblem ? i + 2 : i + 1}
                             />
                         ))}
                     </tbody>
