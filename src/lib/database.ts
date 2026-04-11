@@ -719,6 +719,92 @@ class StorageAdapter {
         }
     }
 
+    /**
+     * Migrate local problems to Supabase after sign-in/sign-up.
+     * Returns the number of problems migrated, or 0 if none.
+     */
+    async migrateLocalData(): Promise<number> {
+        const localProblems = this.getLocalProblems();
+        if (localProblems.length === 0) return 0;
+
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return 0;
+
+        // Get current max queue position from server
+        const { data: maxPosData } = await supabase
+            .from("problems")
+            .select("queue_position")
+            .eq("status", "queued")
+            .order("queue_position", { ascending: false })
+            .limit(1);
+
+        let nextPosition = (maxPosData?.[0]?.queue_position || 0) + 1;
+
+        // Insert problems in batches
+        const problemsToInsert = localProblems.map((p) => ({
+            user_id: user.id,
+            problem_name: p.problem_name,
+            problem_link: p.problem_link,
+            difficulty: p.difficulty,
+            status: p.status,
+            queue_position: p.status === "queued" ? nextPosition++ : null,
+            next_review_date: p.next_review_date,
+            attempt_count: p.attempt_count,
+            consecutive_fives: p.consecutive_fives,
+            last_rating: p.last_rating,
+            created_at: p.created_at,
+            mastered_at: p.mastered_at,
+            source: p.source,
+            topic: p.topic,
+        }));
+
+        const { data: insertedProblems, error } = await supabase
+            .from("problems")
+            .insert(problemsToInsert)
+            .select();
+
+        if (error) throw error;
+
+        // Migrate attempts - map old local IDs to new server IDs
+        if (insertedProblems) {
+            const attemptsToInsert: Array<{
+                problem_id: string;
+                rating: number;
+                attempted_at: string;
+                notes: string | null;
+                time_spent_minutes: number | null;
+            }> = [];
+
+            for (let i = 0; i < localProblems.length; i++) {
+                const localProblem = localProblems[i];
+                const serverProblem = insertedProblems[i];
+                if (localProblem.attempts && localProblem.attempts.length > 0) {
+                    for (const attempt of localProblem.attempts) {
+                        attemptsToInsert.push({
+                            problem_id: serverProblem.id,
+                            rating: attempt.rating,
+                            attempted_at: attempt.attempted_at,
+                            notes: attempt.notes,
+                            time_spent_minutes: attempt.time_spent_minutes,
+                        });
+                    }
+                }
+            }
+
+            if (attemptsToInsert.length > 0) {
+                await supabase.from("attempts").insert(attemptsToInsert);
+            }
+        }
+
+        // Clear local data after successful migration
+        localStorage.removeItem("repeet-problems");
+        localStorage.removeItem("repeet-audit");
+
+        return localProblems.length;
+    }
+
     async checkDailyAudit(): Promise<ProblemWithAttempts | null> {
         if (await this.isAuthenticated()) {
             return checkDailyAudit();

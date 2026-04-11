@@ -175,8 +175,22 @@ function App() {
         });
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
+        } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            const wasSignedOut = !session;
             setSession(session);
+
+            // Migrate local data when user signs in
+            if (session && (_event === "SIGNED_IN" || _event === "TOKEN_REFRESHED")) {
+                try {
+                    const migrated = await storage.migrateLocalData();
+                    if (migrated > 0) {
+                        addToast(`Merged ${migrated} local problem${migrated !== 1 ? "s" : ""} into your account`, "success");
+                    }
+                } catch (error) {
+                    console.error("Error migrating local data:", error);
+                }
+                loadAllData();
+            }
         });
         return () => subscription.unsubscribe();
     }, []);

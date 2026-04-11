@@ -154,13 +154,23 @@ export default function BulkImportModal({ onClose, onBulkAdd }: BulkImportModalP
                         )}
                     </div>
 
-                    <div style={{ display: "flex", gap: 8 }}>
-                        <button type="button" style={btnStyle} onClick={() => setText(neetcode150text)}>
-                            Neetcode 150
-                        </button>
-                        <button type="button" style={btnStyle} onClick={() => setText(grind75text)}>
-                            Grind 75
-                        </button>
+                    <div>
+                        <p style={{
+                            fontFamily: "JetBrains Mono, monospace",
+                            fontSize: 11,
+                            color: "var(--text-faint)",
+                            marginBottom: 8,
+                        }}>
+                            Or load a curated problem set:
+                        </p>
+                        <div style={{ display: "flex", gap: 8 }}>
+                            <button type="button" style={btnStyle} onClick={() => setText(neetcode150text)}>
+                                Neetcode 150
+                            </button>
+                            <button type="button" style={btnStyle} onClick={() => setText(grind75text)}>
+                                Grind 75
+                            </button>
+                        </div>
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
