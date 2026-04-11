@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, type ProblemWithAttempts } from "./lib/database";
 import { storage, type ProblemDifficulty } from "./lib/database";
 import AuthModal from "./components/AuthModal";
@@ -135,6 +135,7 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
 
 function App() {
     const [session, setSession] = useState<any>(null);
+    const previousSessionRef = useRef<any>(null);
     const [loading, setLoading] = useState(true);
 
     const [queueProblems, setQueueProblems] = useState<ProblemWithAttempts[]>([]);
@@ -176,11 +177,12 @@ function App() {
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            const wasSignedOut = !session;
+            const wasSignedOut = !previousSessionRef.current;
+            previousSessionRef.current = session;
             setSession(session);
 
-            // Migrate local data when user signs in
-            if (session && (_event === "SIGNED_IN" || _event === "TOKEN_REFRESHED")) {
+            // Migrate local data when user signs in for the first time this session
+            if (session && wasSignedOut && (_event === "SIGNED_IN" || _event === "TOKEN_REFRESHED")) {
                 try {
                     const migrated = await storage.migrateLocalData();
                     if (migrated > 0) {
