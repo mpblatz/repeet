@@ -28,7 +28,7 @@ function getInitialTheme(): string {
 
 function applyTheme(theme: string) {
     document.getElementById("root")?.setAttribute("data-theme", theme);
-    document.documentElement.style.backgroundColor = theme === "dark" ? "#09090b" : "#f8f8f8";
+    document.documentElement.style.backgroundColor = theme === "dark" ? "#0e0e11" : "#f8f8f8";
     localStorage.setItem("repeet-theme", theme);
 }
 
@@ -174,16 +174,17 @@ function App() {
 
     useEffect(() => {
         loadAllData();
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setLoading(false);
-        });
+
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange(async (_event, session) => {
             const wasSignedOut = !previousSessionRef.current;
             previousSessionRef.current = session;
             setSession(session);
+            setLoading(false);
+
+            // Skip the initial session restore — the mount-time loadAllData() above already covers it
+            if (_event === "INITIAL_SESSION") return;
 
             // Migrate local data when user signs in for the first time this session
             if (session && wasSignedOut && (_event === "SIGNED_IN" || _event === "TOKEN_REFRESHED")) {
@@ -198,18 +199,17 @@ function App() {
                 } catch (error) {
                     console.error("Error migrating local data:", error);
                 }
-                loadAllData();
+                loadAllData(true);
+            } else if (_event === "SIGNED_OUT") {
+                loadAllData(true);
             }
         });
         return () => subscription.unsubscribe();
     }, []);
 
-    useEffect(() => {
-        loadAllData();
-    }, [session]);
-
-    const loadAllData = async () => {
-        setIsLoadingData(true);
+    // silent = refresh data in the background without blanking the current view
+    const loadAllData = async (silent = false) => {
+        if (!silent) setIsLoadingData(true);
         try {
             const [queue, review, mastered, _statsData, audit] = await Promise.all([
                 storage.getQueueProblems(),
@@ -225,7 +225,7 @@ function App() {
         } catch (error) {
             console.error("Error loading data:", error);
         } finally {
-            setIsLoadingData(false);
+            if (!silent) setIsLoadingData(false);
         }
     };
 
@@ -238,7 +238,7 @@ function App() {
     }) => {
         try {
             await storage.addProblem(problem);
-            await loadAllData();
+            await loadAllData(true);
             setShowAddModal(false);
             addToast(`Added "${problem.problem_name}" to queue`, "success");
         } catch (error: any) {
@@ -258,7 +258,7 @@ function App() {
     ) => {
         try {
             await storage.addProblems(problems);
-            await loadAllData();
+            await loadAllData(true);
             setShowBulkAddModal(false);
             addToast(`Imported ${problems.length} problem${problems.length !== 1 ? "s" : ""} to queue`, "success");
         } catch (error: any) {
@@ -270,7 +270,7 @@ function App() {
     const handleRateProblem = async (problemId: string, rating: number) => {
         try {
             await storage.rateProblem(problemId, rating);
-            await loadAllData();
+            await loadAllData(true);
         } catch (error: any) {
             console.error("Error rating problem:", error);
             addToast(error?.message || "Failed to rate problem", "error");
@@ -281,7 +281,7 @@ function App() {
         if (!confirm("Are you sure you want to delete this problem?")) return;
         try {
             await storage.deleteProblem(problemId);
-            await loadAllData();
+            await loadAllData(true);
             addToast("Problem deleted", "success");
         } catch (error: any) {
             console.error("Error deleting problem:", error);
@@ -292,7 +292,7 @@ function App() {
     const handleDeleteAllProblems = async () => {
         try {
             await storage.deleteAllProblems();
-            await loadAllData();
+            await loadAllData(true);
             setShowDeleteAllModal(false);
             addToast("Deleted all problems", "success");
         } catch (error: any) {
@@ -312,7 +312,7 @@ function App() {
     ) => {
         try {
             await storage.updateProblem(problemId, updates);
-            await loadAllData();
+            await loadAllData(true);
             setEditingProblem(null);
             addToast(`Updated "${updates.problem_name}"`, "success");
         } catch (error: any) {
@@ -368,7 +368,7 @@ function App() {
                     className="animate-fade-in-up"
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 48 }}
                 >
-                    <h1 style={{ fontFamily: "Space Mono, monospace" }}>Repeet</h1>
+                    <h1 style={{ fontFamily: "Space Mono, monospace", color: "var(--brand-color)" }}>Repeet</h1>
                     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                         <ThemeToggle />
                         {session ? (
@@ -468,7 +468,7 @@ function App() {
                     {[
                         { label: "+ Add", action: () => setShowAddModal(true) },
                         { label: "+ Bulk Add", action: () => setShowBulkAddModal(true) },
-                        { label: "? Guide", action: () => setShowRatingGuideModal(true) },
+                        { label: "? Rating Guide", action: () => setShowRatingGuideModal(true) },
                     ].map((btn) => (
                         <button
                             key={btn.label}

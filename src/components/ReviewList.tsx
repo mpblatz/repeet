@@ -9,100 +9,7 @@ interface ReviewListProps {
     onEdit: (problem: ProblemWithAttempts) => void;
 }
 
-const sectionHeaderStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-};
-
-const sectionTitleStyle: React.CSSProperties = {
-    fontFamily: "JetBrains Mono, monospace",
-    fontSize: 11,
-    fontWeight: 600,
-    letterSpacing: "0.06em",
-    textTransform: "uppercase",
-    color: "var(--text-muted)",
-};
-
-const sectionCountStyle: React.CSSProperties = {
-    fontFamily: "JetBrains Mono, monospace",
-    fontSize: 11,
-    color: "var(--text-very-faint)",
-};
-
-function ReviewTable({
-    problems,
-    auditProblem,
-    onRate,
-    onDelete,
-    onEdit,
-}: {
-    problems: (ProblemWithAttempts & { isMasteryAttempt: boolean })[];
-    auditProblem: ProblemWithAttempts | null;
-    onRate: (problemId: string, rating: number) => void;
-    onDelete: (problemId: string) => void;
-    onEdit: (problem: ProblemWithAttempts) => void;
-}) {
-    return (
-        <div
-            style={{
-                background: "var(--card-bg)",
-                border: "1px solid var(--border)",
-                borderRadius: 14,
-                overflow: "hidden",
-                boxShadow: "var(--shadow)",
-            }}
-        >
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Problem</th>
-                        <th>Difficulty</th>
-                        <th>Topic</th>
-                        <th>Last Attempt</th>
-                        <th>Last Rating</th>
-                        <th>Due</th>
-                        <th>Attempts</th>
-                        <th>Link</th>
-                        <th>Rate</th>
-                        <th style={{ width: 60 }}></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {auditProblem && (
-                        <ProblemCard
-                            problem={auditProblem}
-                            showRating={true}
-                            showDelete={true}
-                            showEdit={true}
-                            onRate={onRate}
-                            onDelete={onDelete}
-                            onEdit={onEdit}
-                            isAudit={true}
-                            rowNumber={1}
-                        />
-                    )}
-                    {problems.map((problem, i) => (
-                        <ProblemCard
-                            key={problem.id}
-                            problem={problem}
-                            showRating={true}
-                            showDelete={true}
-                            showEdit={true}
-                            onRate={onRate}
-                            onDelete={onDelete}
-                            onEdit={onEdit}
-                            isMasteryAttempt={problem.isMasteryAttempt}
-                            rowNumber={auditProblem ? i + 2 : i + 1}
-                        />
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
-}
+const COLUMN_COUNT = 11;
 
 export default function ReviewList({ problems, auditProblem, onRate, onDelete, onEdit }: ReviewListProps) {
     const today = getTodayDate();
@@ -125,6 +32,8 @@ export default function ReviewList({ problems, auditProblem, onRate, onDelete, o
         );
     }
 
+    let rowNumber = 0;
+
     return (
         <div>
             <p
@@ -137,39 +46,90 @@ export default function ReviewList({ problems, auditProblem, onRate, onDelete, o
                 Complete these problems and rate yourself 1-5. Problems marked with ★ are mastery attempts.
             </p>
 
-            {(dueProblems.length > 0 || auditProblem) && (
-                <div style={{ marginBottom: upcomingProblems.length > 0 ? 40 : 0 }}>
-                    <div style={sectionHeaderStyle}>
-                        <span style={sectionTitleStyle}>Due Now</span>
-                        <span style={sectionCountStyle}>
-                            {dueProblems.length + (auditProblem ? 1 : 0)}
-                        </span>
-                    </div>
-                    <ReviewTable
-                        problems={dueProblems}
-                        auditProblem={auditProblem}
-                        onRate={onRate}
-                        onDelete={onDelete}
-                        onEdit={onEdit}
-                    />
-                </div>
-            )}
+            <div
+                style={{
+                    background: "var(--card-bg)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 14,
+                    overflow: "hidden",
+                    boxShadow: "var(--shadow)",
+                }}
+            >
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Problem</th>
+                            <th>Difficulty</th>
+                            <th>Topic</th>
+                            <th>Last Attempt</th>
+                            <th>Last Rating</th>
+                            <th>Due</th>
+                            <th>Attempts</th>
+                            <th>Link</th>
+                            <th>Rate</th>
+                            <th style={{ width: 60 }}></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {auditProblem && (
+                            <ProblemCard
+                                problem={auditProblem}
+                                showRating={true}
+                                showDelete={true}
+                                showEdit={true}
+                                onRate={onRate}
+                                onDelete={onDelete}
+                                onEdit={onEdit}
+                                isAudit={true}
+                                rowNumber={++rowNumber}
+                            />
+                        )}
+                        {dueProblems.map((problem) => (
+                            <ProblemCard
+                                key={problem.id}
+                                problem={problem}
+                                showRating={true}
+                                showDelete={true}
+                                showEdit={true}
+                                onRate={onRate}
+                                onDelete={onDelete}
+                                onEdit={onEdit}
+                                isMasteryAttempt={problem.isMasteryAttempt}
+                                rowNumber={++rowNumber}
+                            />
+                        ))}
 
-            {upcomingProblems.length > 0 && (
-                <div>
-                    <div style={sectionHeaderStyle}>
-                        <span style={sectionTitleStyle}>Not Due Yet</span>
-                        <span style={sectionCountStyle}>{upcomingProblems.length}</span>
-                    </div>
-                    <ReviewTable
-                        problems={upcomingProblems}
-                        auditProblem={null}
-                        onRate={onRate}
-                        onDelete={onDelete}
-                        onEdit={onEdit}
-                    />
-                </div>
-            )}
+                        {dueProblems.length > 0 && upcomingProblems.length > 0 && (
+                            <tr aria-hidden="true">
+                                <td
+                                    colSpan={COLUMN_COUNT}
+                                    style={{
+                                        padding: 0,
+                                        borderBottom:
+                                            "2px solid color-mix(in srgb, var(--link-color) 45%, transparent)",
+                                    }}
+                                />
+                            </tr>
+                        )}
+
+                        {upcomingProblems.map((problem) => (
+                            <ProblemCard
+                                key={problem.id}
+                                problem={problem}
+                                showRating={true}
+                                showDelete={true}
+                                showEdit={true}
+                                onRate={onRate}
+                                onDelete={onDelete}
+                                onEdit={onEdit}
+                                isMasteryAttempt={problem.isMasteryAttempt}
+                                rowNumber={++rowNumber}
+                            />
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
