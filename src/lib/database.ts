@@ -379,6 +379,45 @@ export const deleteProblem = async (problemId: string): Promise<void> => {
     if (error) throw error;
 };
 
+/**
+ * Delete every problem (and their attempts) belonging to the current user
+ */
+export const deleteAllProblems = async (): Promise<void> => {
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("No user logged in");
+
+    const { error } = await supabase.from("problems").delete().eq("user_id", user.id);
+
+    if (error) throw error;
+};
+
+/**
+ * Update a problem's editable fields
+ */
+export const updateProblem = async (
+    problemId: string,
+    updates: {
+        problem_name: string;
+        problem_link?: string;
+        difficulty: ProblemDifficulty;
+        topic?: string;
+    }
+): Promise<void> => {
+    const { error } = await supabase
+        .from("problems")
+        .update({
+            problem_name: updates.problem_name,
+            problem_link: updates.problem_link || null,
+            difficulty: updates.difficulty,
+            topic: updates.topic || null,
+        })
+        .eq("id", problemId);
+
+    if (error) throw error;
+};
+
 // ============================================================================
 // API Functions - User Settings
 // ============================================================================
@@ -691,6 +730,43 @@ class StorageAdapter {
         } else {
             const problems = this.getLocalProblems();
             this.saveLocalProblems(problems.filter((p) => p.id !== problemId));
+        }
+    }
+
+    async deleteAllProblems(): Promise<void> {
+        if (await this.isAuthenticated()) {
+            return deleteAllProblems();
+        } else {
+            this.saveLocalProblems([]);
+            localStorage.removeItem("repeet-audit");
+        }
+    }
+
+    async updateProblem(
+        problemId: string,
+        updates: {
+            problem_name: string;
+            problem_link?: string;
+            difficulty: ProblemDifficulty;
+            topic?: string;
+        }
+    ): Promise<void> {
+        if (await this.isAuthenticated()) {
+            return updateProblem(problemId, updates);
+        } else {
+            const problems = this.getLocalProblems();
+            const problemIndex = problems.findIndex((p) => p.id === problemId);
+            if (problemIndex === -1) return;
+
+            problems[problemIndex] = {
+                ...problems[problemIndex],
+                problem_name: updates.problem_name,
+                problem_link: updates.problem_link || null,
+                difficulty: updates.difficulty,
+                topic: updates.topic || null,
+            };
+
+            this.saveLocalProblems(problems);
         }
     }
 

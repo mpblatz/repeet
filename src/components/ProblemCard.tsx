@@ -1,11 +1,14 @@
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { type ProblemWithAttempts, formatRelativeDate } from "../lib/database";
 
 interface ProblemCardProps {
     problem: ProblemWithAttempts;
     showRating?: boolean;
     showDelete?: boolean;
+    showEdit?: boolean;
     onRate?: (problemId: string, rating: number) => void;
     onDelete?: (problemId: string) => void;
+    onEdit?: (problem: ProblemWithAttempts) => void;
     isAudit?: boolean;
     isMasteryAttempt?: boolean;
     rowNumber?: number;
@@ -24,8 +27,10 @@ export default function ProblemCard({
     problem,
     showRating = false,
     showDelete = false,
+    showEdit = false,
     onRate,
     onDelete,
+    onEdit,
     isAudit = false,
     isMasteryAttempt = false,
     rowNumber,
@@ -205,23 +210,46 @@ export default function ProblemCard({
                 </td>
             )}
 
-            {showDelete && onDelete && (
+            {(showEdit || showDelete) && (
                 <td style={{ padding: "10px 8px" }}>
-                    <button
-                        onClick={() => onDelete(problem.id)}
-                        title="Delete problem"
-                        style={{
-                            color: "var(--text-very-faint)",
-                            fontSize: 13,
-                            padding: "2px 6px",
-                            borderRadius: 5,
-                            transition: "color 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--difficulty-hard)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-very-faint)")}
-                    >
-                        ✕
-                    </button>
+                    <div style={{ display: "flex", gap: 2 }}>
+                        {showEdit && onEdit && (
+                            <button
+                                onClick={() => onEdit(problem)}
+                                title="Edit problem"
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    color: "var(--text-very-faint)",
+                                    padding: "4px 6px",
+                                    borderRadius: 5,
+                                    transition: "color 0.2s ease",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--link-color)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-very-faint)")}
+                            >
+                                <PencilIcon size={13} />
+                            </button>
+                        )}
+                        {showDelete && onDelete && (
+                            <button
+                                onClick={() => onDelete(problem.id)}
+                                title="Delete problem"
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    color: "var(--text-very-faint)",
+                                    padding: "4px 6px",
+                                    borderRadius: 5,
+                                    transition: "color 0.2s ease",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--difficulty-hard)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-very-faint)")}
+                            >
+                                <Trash2Icon size={13} />
+                            </button>
+                        )}
+                    </div>
                 </td>
             )}
         </tr>

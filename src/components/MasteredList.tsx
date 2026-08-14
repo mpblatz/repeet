@@ -4,9 +4,11 @@ import ProblemCard from "./ProblemCard";
 interface MasteredListProps {
     problems: ProblemWithAttempts[];
     onRate: (problemId: string, rating: number) => void;
+    onDelete: (problemId: string) => void;
+    onEdit: (problem: ProblemWithAttempts) => void;
 }
 
-export default function MasteredList({ problems, onRate }: MasteredListProps) {
+export default function MasteredList({ problems, onRate, onDelete, onEdit }: MasteredListProps) {
     if (problems.length === 0) {
         return (
             <p style={{ color: "var(--text-muted)", fontFamily: "IBM Plex Sans, sans-serif" }}>
@@ -43,6 +45,7 @@ export default function MasteredList({ problems, onRate }: MasteredListProps) {
                             <th>Attempts</th>
                             <th>Link</th>
                             <th>Rate</th>
+                            <th style={{ width: 60 }}></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -51,7 +54,11 @@ export default function MasteredList({ problems, onRate }: MasteredListProps) {
                                 key={problem.id}
                                 problem={problem}
                                 showRating={true}
+                                showDelete={true}
+                                showEdit={true}
                                 onRate={onRate}
+                                onDelete={onDelete}
+                                onEdit={onEdit}
                             />
                         ))}
                     </tbody>

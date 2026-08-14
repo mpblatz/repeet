@@ -5,9 +5,10 @@ interface QueueListProps {
     problems: ProblemWithAttempts[];
     onRate: (problemId: string, rating: number) => void;
     onDelete: (problemId: string) => void;
+    onEdit: (problem: ProblemWithAttempts) => void;
 }
 
-export default function QueueList({ problems, onRate, onDelete }: QueueListProps) {
+export default function QueueList({ problems, onRate, onDelete, onEdit }: QueueListProps) {
     if (problems.length === 0) {
         return (
             <p style={{ color: "var(--text-muted)", fontFamily: "IBM Plex Sans, sans-serif" }}>
@@ -42,7 +43,7 @@ export default function QueueList({ problems, onRate, onDelete }: QueueListProps
                             <th>Topic</th>
                             <th>Link</th>
                             <th>Rate</th>
-                            <th style={{ width: 40 }}></th>
+                            <th style={{ width: 60 }}></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -52,8 +53,10 @@ export default function QueueList({ problems, onRate, onDelete }: QueueListProps
                                 problem={problem}
                                 showRating={true}
                                 showDelete={true}
+                                showEdit={true}
                                 onRate={onRate}
                                 onDelete={onDelete}
+                                onEdit={onEdit}
                             />
                         ))}
                     </tbody>

@@ -7,6 +7,8 @@ import ReviewList from "./components/ReviewList";
 import MasteredList from "./components/MasteredList";
 import AddProblemModal from "./components/AddProblemModal";
 import AddBulkProblemsModal from "./components/AddBulkProblemsModal";
+import EditProblemModal from "./components/EditProblemModal";
+import DeleteAllModal from "./components/DeleteAllModal";
 import RatingGuideModal from "./components/RatingGuideModal";
 import { MoonIcon, SunIcon } from "lucide-react";
 
@@ -147,6 +149,8 @@ function App() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showBulkAddModal, setShowBulkAddModal] = useState(false);
     const [showRatingGuideModal, setShowRatingGuideModal] = useState(false);
+    const [editingProblem, setEditingProblem] = useState<ProblemWithAttempts | null>(null);
+    const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
@@ -186,7 +190,10 @@ function App() {
                 try {
                     const migrated = await storage.migrateLocalData();
                     if (migrated > 0) {
-                        addToast(`Merged ${migrated} local problem${migrated !== 1 ? "s" : ""} into your account`, "success");
+                        addToast(
+                            `Merged ${migrated} local problem${migrated !== 1 ? "s" : ""} into your account`,
+                            "success",
+                        );
                     }
                 } catch (error) {
                     console.error("Error migrating local data:", error);
@@ -282,6 +289,38 @@ function App() {
         }
     };
 
+    const handleDeleteAllProblems = async () => {
+        try {
+            await storage.deleteAllProblems();
+            await loadAllData();
+            setShowDeleteAllModal(false);
+            addToast("Deleted all problems", "success");
+        } catch (error: any) {
+            console.error("Error deleting all problems:", error);
+            addToast(error?.message || "Failed to delete all problems", "error");
+        }
+    };
+
+    const handleUpdateProblem = async (
+        problemId: string,
+        updates: {
+            problem_name: string;
+            problem_link?: string;
+            difficulty: ProblemDifficulty;
+            topic?: string;
+        },
+    ) => {
+        try {
+            await storage.updateProblem(problemId, updates);
+            await loadAllData();
+            setEditingProblem(null);
+            addToast(`Updated "${updates.problem_name}"`, "success");
+        } catch (error: any) {
+            console.error("Error updating problem:", error);
+            addToast(error?.message || "Failed to update problem", "error");
+        }
+    };
+
     const handleAuthSuccess = (message: string) => {
         addToast(message, "success");
     };
@@ -323,7 +362,7 @@ function App() {
     return (
         <div style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100vh" }}>
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 32px" }}>
+            <div style={{ maxWidth: 1300, margin: "0 auto", padding: "48px 32px" }}>
                 {/* Header */}
                 <header
                     className="animate-fade-in-up"
@@ -445,6 +484,24 @@ function App() {
                             {btn.label}
                         </button>
                     ))}
+
+                    {queueProblems.length + reviewProblems.length + masteredProblems.length > 0 && (
+                        <button
+                            onClick={() => setShowDeleteAllModal(true)}
+                            style={{
+                                background: "var(--btn-bg)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 8,
+                                padding: "6px 12px",
+                                color: "var(--text-very-faint)",
+                                transition: "color 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--difficulty-hard)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-very-faint)")}
+                        >
+                            Delete All
+                        </button>
+                    )}
                 </nav>
 
                 {/* Main Content */}
@@ -468,6 +525,8 @@ function App() {
                                     problems={reviewProblems}
                                     auditProblem={auditProblem}
                                     onRate={handleRateProblem}
+                                    onDelete={handleDeleteProblem}
+                                    onEdit={setEditingProblem}
                                 />
                             )}
                             {currentView === "queue" && (
@@ -475,10 +534,16 @@ function App() {
                                     problems={queueProblems}
                                     onRate={handleRateProblem}
                                     onDelete={handleDeleteProblem}
+                                    onEdit={setEditingProblem}
                                 />
                             )}
                             {currentView === "mastered" && (
-                                <MasteredList problems={masteredProblems} onRate={handleRateProblem} />
+                                <MasteredList
+                                    problems={masteredProblems}
+                                    onRate={handleRateProblem}
+                                    onDelete={handleDeleteProblem}
+                                    onEdit={setEditingProblem}
+                                />
                             )}
                         </>
                     )}
@@ -505,6 +570,19 @@ function App() {
                     >
                         Repeet — spaced repetition for LeetCode
                     </span>
+                    <span
+                        style={{
+                            fontFamily: "JetBrains Mono, monospace",
+                            fontSize: 11,
+                            color: "var(--text-very-faint)",
+                            letterSpacing: "0.03em",
+                        }}
+                    >
+                        Great companion to{" "}
+                        <a href="https://neetcode.io" target="_blank" rel="noopener noreferrer">
+                            neetcode.io
+                        </a>
+                    </span>
                 </footer>
 
                 {showAuthModal && (
@@ -522,6 +600,20 @@ function App() {
                     />
                 )}
                 {showRatingGuideModal && <RatingGuideModal onClose={() => setShowRatingGuideModal(false)} />}
+                {editingProblem && (
+                    <EditProblemModal
+                        problem={editingProblem}
+                        onClose={() => setEditingProblem(null)}
+                        onSave={handleUpdateProblem}
+                    />
+                )}
+                {showDeleteAllModal && (
+                    <DeleteAllModal
+                        count={queueProblems.length + reviewProblems.length + masteredProblems.length}
+                        onClose={() => setShowDeleteAllModal(false)}
+                        onConfirm={handleDeleteAllProblems}
+                    />
+                )}
             </div>
         </div>
     );
