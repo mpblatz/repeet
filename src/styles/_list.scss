@@ -1,0 +1,237 @@
+/* ============================================================================
+   Problem Lists (Queue / Review / Mastered)
+   ============================================================================ */
+
+.list-description {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 24px;
+}
+
+.col-narrow {
+    width: 50px;
+}
+
+.col-actions {
+    width: 60px;
+}
+
+.list-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.empty-state {
+    color: var(--text-muted);
+    font-family: "IBM Plex Sans", sans-serif;
+}
+
+.loading-state {
+    text-align: center;
+    padding: 64px;
+    color: var(--text-faint);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+}
+
+.review-divider td {
+    padding: 0;
+    border-bottom: 2px solid color-mix(in srgb, var(--link-color) 45%, transparent);
+}
+
+/* ============================================================================
+   Problem Row (ProblemCard)
+   ============================================================================ */
+
+.problem-row {
+    border-bottom: 1px solid var(--divider);
+    transition: background-color 0.15s ease;
+
+    &--audit {
+        background: color-mix(in srgb, var(--link-color) 8%, transparent);
+    }
+}
+
+.cell-mono {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+}
+
+.cell-audit-badge {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    color: var(--link-color);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.cell-topic {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.cell-due {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.problem-name {
+    &--mastery {
+        font-weight: 500;
+        font-style: italic;
+    }
+}
+
+.mastery-star {
+    color: var(--link-color);
+
+    &--left {
+        margin-right: 4px;
+    }
+
+    &--right {
+        margin-left: 4px;
+    }
+}
+
+.problem-link {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    text-decoration: none;
+    color: var(--text-faint);
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: var(--link-color);
+    }
+}
+
+.rating-cell {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--rating-color, var(--text-muted));
+}
+
+.rating-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.rating-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    background: color-mix(in srgb, var(--rating-color) 10%, transparent);
+    color: var(--rating-color);
+    border: 1px solid color-mix(in srgb, var(--rating-color) 20%, transparent);
+    transition: all 0.15s ease;
+
+    &:hover {
+        background: color-mix(in srgb, var(--rating-color) 20%, transparent);
+    }
+}
+
+.row-actions {
+    display: flex;
+    gap: 2px;
+}
+
+/* ============================================================================
+   Rating Guide
+   ============================================================================ */
+
+.rating-guide-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rating-guide-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--rating-color) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--rating-color) 12%, transparent);
+}
+
+.rating-guide-number {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--rating-color);
+    width: 20px;
+    text-align: center;
+}
+
+.rating-guide-meaning {
+    flex: 1;
+    font-size: 14px;
+}
+
+.rating-guide-next {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+}
+
+.rating-guide-footer {
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: "JetBrains Mono", monospace;
+    letter-spacing: 0.01em;
+}
+
+/* ============================================================================
+   Bulk Import
+   ============================================================================ */
+
+.bulk-instructions {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.7;
+
+    p {
+        margin-bottom: 8px;
+    }
+}
+
+.bulk-code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    background: var(--btn-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.bulk-hint {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+}
+
+.bulk-count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 6px;
+}
+
+.bulk-presets {
+    display: flex;
+    gap: 8px;
+}

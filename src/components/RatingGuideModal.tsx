@@ -12,86 +12,30 @@ const ratings = [
 
 export default function RatingGuideModal({ onClose }: RatingGuideModalProps) {
     return (
-        <div
-            className="animate-fade-in"
-            style={{
-                position: "fixed",
-                inset: 0,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "flex-start",
-                background: "var(--modal-bg)",
-                zIndex: 50,
-                paddingTop: 80,
-            }}
-            onClick={onClose}
-        >
-            <div
-                style={{
-                    background: "var(--card-bg)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 14,
-                    padding: "32px",
-                    width: 440,
-                    maxWidth: "90vw",
-                    boxShadow: "var(--shadow-hover)",
-                }}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+        <div className="modal-overlay animate-fade-in" onClick={onClose}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
                     <h2>Rating Guide</h2>
-                    <button onClick={onClose} style={{ color: "var(--text-faint)", fontSize: 16, padding: "4px 8px" }}>
+                    <button className="modal-close" onClick={onClose}>
                         ✕
                     </button>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="rating-guide-list">
                     {ratings.map((r) => (
                         <div
                             key={r.rating}
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 12,
-                                padding: "10px 14px",
-                                borderRadius: 8,
-                                background: `color-mix(in srgb, ${r.color} 6%, transparent)`,
-                                border: `1px solid color-mix(in srgb, ${r.color} 12%, transparent)`,
-                            }}
+                            className="rating-guide-row"
+                            style={{ "--rating-color": r.color } as React.CSSProperties}
                         >
-                            <span style={{
-                                fontFamily: "JetBrains Mono, monospace",
-                                fontSize: 14,
-                                fontWeight: 700,
-                                color: r.color,
-                                width: 20,
-                                textAlign: "center",
-                            }}>
-                                {r.rating}
-                            </span>
-                            <span style={{ flex: 1, fontSize: 14 }}>
-                                {r.meaning}
-                            </span>
-                            <span style={{
-                                fontFamily: "JetBrains Mono, monospace",
-                                fontSize: 11,
-                                color: "var(--text-faint)",
-                            }}>
-                                → {r.next}
-                            </span>
+                            <span className="rating-guide-number">{r.rating}</span>
+                            <span className="rating-guide-meaning">{r.meaning}</span>
+                            <span className="rating-guide-next">→ {r.next}</span>
                         </div>
                     ))}
                 </div>
 
-                <p style={{
-                    marginTop: 20,
-                    fontSize: 13,
-                    color: "var(--text-muted)",
-                    fontFamily: "JetBrains Mono, monospace",
-                    letterSpacing: "0.01em",
-                }}>
-                    Rate 5 twice → Mastered
-                </p>
+                <p className="rating-guide-footer">Rate 5 twice → Mastered</p>
             </div>
         </div>
     );

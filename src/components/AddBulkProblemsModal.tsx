@@ -16,57 +16,6 @@ interface BulkImportModalProps {
     ) => Promise<void>;
 }
 
-const modalOverlay: React.CSSProperties = {
-    position: "fixed",
-    inset: 0,
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    background: "var(--modal-bg)",
-    zIndex: 50,
-    paddingTop: 60,
-};
-
-const modalCard: React.CSSProperties = {
-    background: "var(--card-bg)",
-    border: "1px solid var(--border)",
-    borderRadius: 14,
-    padding: "32px",
-    width: 680,
-    maxWidth: "90vw",
-    boxShadow: "var(--shadow-hover)",
-};
-
-const labelStyle: React.CSSProperties = {
-    fontFamily: "JetBrains Mono, monospace",
-    fontSize: 11,
-    fontWeight: 500,
-    letterSpacing: "0.04em",
-    color: "var(--text-muted)",
-    textTransform: "uppercase",
-    marginBottom: 6,
-    display: "block",
-};
-
-const btnStyle: React.CSSProperties = {
-    background: "var(--btn-bg)",
-    border: "1px solid var(--border)",
-    borderRadius: 8,
-    padding: "7px 14px",
-    color: "var(--text-muted)",
-    fontFamily: "JetBrains Mono, monospace",
-    fontSize: 12,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-};
-
-const btnPrimary: React.CSSProperties = {
-    ...btnStyle,
-    background: "color-mix(in srgb, var(--link-color) 10%, transparent)",
-    borderColor: "color-mix(in srgb, var(--link-color) 20%, transparent)",
-    color: "var(--link-color)",
-};
-
 export default function BulkImportModal({ onClose, onBulkAdd }: BulkImportModalProps) {
     const [text, setText] = useState("");
     const [loading, setLoading] = useState(false);
@@ -99,38 +48,24 @@ export default function BulkImportModal({ onClose, onBulkAdd }: BulkImportModalP
     };
 
     return (
-        <div className="animate-fade-in" style={modalOverlay} onClick={onClose}>
-            <div style={modalCard} onClick={(e) => e.stopPropagation()}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <div className="modal-overlay modal-overlay--tight animate-fade-in" onClick={onClose}>
+            <div className="modal-card modal-card--wider" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
                     <h2>Bulk Add Problems</h2>
-                    <button onClick={onClose} style={{ color: "var(--text-faint)", fontSize: 16, padding: "4px 8px" }}>
+                    <button className="modal-close" onClick={onClose}>
                         ✕
                     </button>
                 </div>
 
-                <div style={{
-                    fontSize: 13,
-                    color: "var(--text-muted)",
-                    marginBottom: 24,
-                    lineHeight: 1.7,
-                }}>
-                    <p style={{ marginBottom: 8 }}>Paste problems in CSV format, one per line:</p>
-                    <code style={{
-                        fontFamily: "JetBrains Mono, monospace",
-                        fontSize: 11,
-                        color: "var(--text-faint)",
-                        background: "var(--btn-bg)",
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                    }}>
-                        Name, Difficulty, Topic, URL
-                    </code>
+                <div className="bulk-instructions">
+                    <p>Paste problems in CSV format, one per line:</p>
+                    <code className="bulk-code">Name, Difficulty, Topic, URL</code>
                 </div>
 
-                <form onSubmit={handleImport} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <form onSubmit={handleImport} className="modal-form">
                     <div>
-                        <label htmlFor="problems-text" style={labelStyle}>
-                            Problems <span style={{ color: "var(--link-color)" }}>*</span>
+                        <label htmlFor="problems-text" className="modal-label">
+                            Problems <span className="modal-required">*</span>
                         </label>
                         <textarea
                             id="problems-text"
@@ -140,44 +75,32 @@ export default function BulkImportModal({ onClose, onBulkAdd }: BulkImportModalP
                             rows={8}
                             required
                             autoFocus
-                            style={{ width: "100%", boxSizing: "border-box", resize: "vertical" }}
+                            className="modal-field modal-textarea"
                         />
                         {problemCount > 0 && (
-                            <p style={{
-                                fontFamily: "JetBrains Mono, monospace",
-                                fontSize: 11,
-                                color: "var(--text-faint)",
-                                marginTop: 6,
-                            }}>
+                            <p className="bulk-count">
                                 {problemCount} problem{problemCount !== 1 ? "s" : ""} detected
                             </p>
                         )}
                     </div>
 
                     <div>
-                        <p style={{
-                            fontFamily: "JetBrains Mono, monospace",
-                            fontSize: 11,
-                            color: "var(--text-faint)",
-                            marginBottom: 8,
-                        }}>
-                            Or load a curated problem set:
-                        </p>
-                        <div style={{ display: "flex", gap: 8 }}>
-                            <button type="button" style={btnStyle} onClick={() => setText(neetcode150text)}>
+                        <p className="bulk-hint">Or load a curated problem set:</p>
+                        <div className="bulk-presets">
+                            <button type="button" className="btn" onClick={() => setText(neetcode150text)}>
                                 Neetcode 150
                             </button>
-                            <button type="button" style={btnStyle} onClick={() => setText(grind75text)}>
+                            <button type="button" className="btn" onClick={() => setText(grind75text)}>
                                 Grind 75
                             </button>
                         </div>
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-                        <button type="button" style={btnStyle} onClick={onClose} disabled={loading}>
+                    <div className="modal-actions modal-actions--tight">
+                        <button type="button" className="btn" onClick={onClose} disabled={loading}>
                             Cancel
                         </button>
-                        <button type="submit" style={btnPrimary} disabled={loading || problemCount === 0}>
+                        <button type="submit" className="btn btn-primary" disabled={loading || problemCount === 0}>
                             {loading
                                 ? "Importing..."
                                 : `Import ${problemCount} Problem${problemCount !== 1 ? "s" : ""}`}

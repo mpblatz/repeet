@@ -1,0 +1,89 @@
+/* ============================================================================
+   Shared Buttons
+   ============================================================================ */
+
+.btn {
+    background: var(--btn-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 14px;
+    color: var(--text-muted);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+
+.btn-primary {
+    background: color-mix(in srgb, var(--link-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--link-color) 20%, transparent);
+    color: var(--link-color);
+}
+
+.btn-danger {
+    background: color-mix(in srgb, var(--difficulty-hard) 10%, transparent);
+    border-color: color-mix(in srgb, var(--difficulty-hard) 25%, transparent);
+    color: var(--difficulty-hard);
+}
+
+.btn-small {
+    padding: 4px 10px;
+    font-size: 11px;
+}
+
+.btn-full {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 9px 14px;
+}
+
+/* Ghost nav/header buttons that only reveal color on hover */
+.btn-ghost {
+    background: var(--btn-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: var(--text-muted);
+}
+
+.btn-ghost-danger {
+    @extend .btn-ghost;
+    color: var(--text-very-faint);
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: var(--difficulty-hard);
+    }
+}
+
+.icon-btn {
+    display: flex;
+    align-items: center;
+    color: var(--text-very-faint);
+    padding: 4px 6px;
+    border-radius: 5px;
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: var(--link-color);
+    }
+
+    &--delete:hover {
+        color: var(--difficulty-hard);
+    }
+}
+
+.modal-close {
+    color: var(--text-faint);
+    font-size: 16px;
+    padding: 4px 8px;
+}

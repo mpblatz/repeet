@@ -11,7 +11,7 @@ interface QueueListProps {
 export default function QueueList({ problems, onRate, onDelete, onEdit }: QueueListProps) {
     if (problems.length === 0) {
         return (
-            <p style={{ color: "var(--text-muted)", fontFamily: "IBM Plex Sans, sans-serif" }}>
+            <p className="empty-state">
                 Add problems to your queue to get started. Try importing Neetcode 150 or Grind 75!
             </p>
         );
@@ -19,31 +19,21 @@ export default function QueueList({ problems, onRate, onDelete, onEdit }: QueueL
 
     return (
         <div>
-            <p style={{
-                color: "var(--text-muted)",
-                fontSize: 13,
-                marginBottom: 24,
-            }}>
+            <p className="list-description">
                 These are problems you haven't attempted yet. Work through them in order, or jump ahead to any problem.
             </p>
 
-            <div style={{
-                background: "var(--card-bg)",
-                border: "1px solid var(--border)",
-                borderRadius: 14,
-                overflow: "hidden",
-                boxShadow: "var(--shadow)",
-            }}>
+            <div className="list-card">
                 <table>
                     <thead>
                         <tr>
-                            <th style={{ width: 50 }}>#</th>
+                            <th className="col-narrow">#</th>
                             <th>Problem</th>
                             <th>Difficulty</th>
                             <th>Topic</th>
                             <th>Link</th>
                             <th>Rate</th>
-                            <th style={{ width: 60 }}></th>
+                            <th className="col-actions"></th>
                         </tr>
                     </thead>
                     <tbody>

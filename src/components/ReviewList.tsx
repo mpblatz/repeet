@@ -9,8 +9,6 @@ interface ReviewListProps {
     onEdit: (problem: ProblemWithAttempts) => void;
 }
 
-const COLUMN_COUNT = 11;
-
 export default function ReviewList({ problems, auditProblem, onRate, onDelete, onEdit }: ReviewListProps) {
     const today = getTodayDate();
 
@@ -26,7 +24,7 @@ export default function ReviewList({ problems, auditProblem, onRate, onDelete, o
 
     if (totalProblems === 0) {
         return (
-            <p style={{ color: "var(--text-muted)", fontFamily: "IBM Plex Sans, sans-serif" }}>
+            <p className="empty-state">
                 No problems left with a pending review. Attempt problems from your queue to populate this list.
             </p>
         );
@@ -36,25 +34,11 @@ export default function ReviewList({ problems, auditProblem, onRate, onDelete, o
 
     return (
         <div>
-            <p
-                style={{
-                    color: "var(--text-muted)",
-                    fontSize: 13,
-                    marginBottom: 24,
-                }}
-            >
+            <p className="list-description">
                 Complete these problems and rate yourself 1-5. Problems marked with ★ are mastery attempts.
             </p>
 
-            <div
-                style={{
-                    background: "var(--card-bg)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 14,
-                    overflow: "hidden",
-                    boxShadow: "var(--shadow)",
-                }}
-            >
+            <div className="list-card">
                 <table>
                     <thead>
                         <tr>
@@ -68,7 +52,7 @@ export default function ReviewList({ problems, auditProblem, onRate, onDelete, o
                             <th>Attempts</th>
                             <th>Link</th>
                             <th>Rate</th>
-                            <th style={{ width: 60 }}></th>
+                            <th className="col-actions"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,15 +85,8 @@ export default function ReviewList({ problems, auditProblem, onRate, onDelete, o
                         ))}
 
                         {dueProblems.length > 0 && upcomingProblems.length > 0 && (
-                            <tr aria-hidden="true">
-                                <td
-                                    colSpan={COLUMN_COUNT}
-                                    style={{
-                                        padding: 0,
-                                        borderBottom:
-                                            "2px solid color-mix(in srgb, var(--link-color) 45%, transparent)",
-                                    }}
-                                />
+                            <tr aria-hidden="true" className="review-divider">
+                                <td colSpan={11} />
                             </tr>
                         )}
 

@@ -41,46 +41,16 @@ function ThemeToggle() {
     };
 
     return (
-        <div
-            style={{
-                display: "flex",
-                background: "var(--toggle-bg)",
-                borderRadius: 8,
-                padding: 3,
-                gap: 2,
-            }}
-        >
+        <div className="theme-toggle">
             <button
                 onClick={() => toggle("light")}
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 30,
-                    height: 26,
-                    borderRadius: 6,
-                    background: theme === "light" ? "var(--toggle-active)" : "transparent",
-                    boxShadow: theme === "light" ? "var(--toggle-shadow)" : "none",
-                    color: theme === "light" ? "var(--text)" : "var(--text-faint)",
-                    transition: "all 0.15s ease",
-                }}
+                className={`theme-toggle-btn${theme === "light" ? " active" : ""}`}
             >
                 <SunIcon size={14} />
             </button>
             <button
                 onClick={() => toggle("dark")}
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 30,
-                    height: 26,
-                    borderRadius: 6,
-                    background: theme === "dark" ? "var(--toggle-active)" : "transparent",
-                    boxShadow: theme === "dark" ? "var(--toggle-shadow)" : "none",
-                    color: theme === "dark" ? "var(--text)" : "var(--text-faint)",
-                    transition: "all 0.15s ease",
-                }}
+                className={`theme-toggle-btn${theme === "dark" ? " active" : ""}`}
             >
                 <MoonIcon size={14} />
             </button>
@@ -92,40 +62,11 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
     if (toasts.length === 0) return null;
 
     return (
-        <div
-            style={{
-                position: "fixed",
-                top: 20,
-                right: 20,
-                zIndex: 100,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-            }}
-        >
+        <div className="toast-container">
             {toasts.map((toast) => (
                 <div
                     key={toast.id}
-                    className="animate-fade-in"
-                    style={{
-                        padding: "10px 16px",
-                        borderRadius: 8,
-                        fontFamily: "JetBrains Mono, monospace",
-                        fontSize: 12,
-                        maxWidth: 360,
-                        cursor: "pointer",
-                        background:
-                            toast.type === "error"
-                                ? "color-mix(in srgb, #ef4444 10%, var(--card-bg))"
-                                : "color-mix(in srgb, #22c55e 10%, var(--card-bg))",
-                        border: `1px solid ${
-                            toast.type === "error"
-                                ? "color-mix(in srgb, #ef4444 20%, transparent)"
-                                : "color-mix(in srgb, #22c55e 20%, transparent)"
-                        }`,
-                        color: toast.type === "error" ? "#ef4444" : "#22c55e",
-                        boxShadow: "var(--shadow-hover)",
-                    }}
+                    className={`toast toast--${toast.type} animate-fade-in`}
                     onClick={() => onDismiss(toast.id)}
                 >
                     {toast.message}
@@ -345,68 +286,30 @@ function App() {
 
     if (loading) {
         return (
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100vh",
-                    color: "var(--text-muted)",
-                }}
-            >
-                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 13 }}>Loading...</p>
+            <div className="app-loading">
+                <p>Loading...</p>
             </div>
         );
     }
 
     return (
-        <div style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100vh" }}>
+        <div className="app">
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            <div style={{ maxWidth: 1300, margin: "0 auto", padding: "48px 32px" }}>
+            <div className="app-container">
                 {/* Header */}
-                <header
-                    className="animate-fade-in-up"
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 48 }}
-                >
-                    <h1 style={{ fontFamily: "Space Mono, monospace", color: "var(--brand-color)" }}>Repeet</h1>
-                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <header className="app-header animate-fade-in-up">
+                    <h1 className="brand">Repeet</h1>
+                    <div className="header-actions">
                         <ThemeToggle />
                         {session ? (
-                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                <span
-                                    style={{
-                                        fontFamily: "JetBrains Mono, monospace",
-                                        fontSize: 11,
-                                        color: "var(--text-muted)",
-                                        letterSpacing: "0.02em",
-                                    }}
-                                >
-                                    {session.user.email}
-                                </span>
-                                <button
-                                    onClick={handleLogout}
-                                    style={{
-                                        background: "var(--btn-bg)",
-                                        border: "1px solid var(--border)",
-                                        borderRadius: 8,
-                                        padding: "6px 12px",
-                                        color: "var(--text-muted)",
-                                    }}
-                                >
+                            <div className="session-info">
+                                <span className="session-email">{session.user.email}</span>
+                                <button className="btn-ghost" onClick={handleLogout}>
                                     Logout
                                 </button>
                             </div>
                         ) : (
-                            <button
-                                onClick={() => setShowAuthModal(true)}
-                                style={{
-                                    background: "var(--btn-bg)",
-                                    border: "1px solid var(--border)",
-                                    borderRadius: 8,
-                                    padding: "6px 12px",
-                                    color: "var(--text-muted)",
-                                }}
-                            >
+                            <button className="btn-ghost" onClick={() => setShowAuthModal(true)}>
                                 Sign In to Sync
                             </button>
                         )}
@@ -414,91 +317,34 @@ function App() {
                 </header>
 
                 {/* Navigation */}
-                <nav
-                    className="animate-fade-in-up"
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        marginBottom: 48,
-                        flexWrap: "wrap",
-                        animationDelay: "0.08s",
-                    }}
-                >
-                    <div
-                        style={{
-                            display: "flex",
-                            background: "var(--toggle-bg)",
-                            borderRadius: 8,
-                            padding: 3,
-                            gap: 2,
-                        }}
-                    >
+                <nav className="app-nav animate-fade-in-up" style={{ animationDelay: "0.08s" }}>
+                    <div className="view-tabs">
                         {views.map((v) => (
                             <button
                                 key={v.key}
                                 onClick={() => setCurrentView(v.key)}
-                                style={{
-                                    padding: "7px 14px",
-                                    borderRadius: 6,
-                                    fontSize: 11.5,
-                                    fontWeight: currentView === v.key ? 600 : 400,
-                                    background: currentView === v.key ? "var(--toggle-active)" : "transparent",
-                                    boxShadow: currentView === v.key ? "var(--toggle-shadow)" : "none",
-                                    color: currentView === v.key ? "var(--text)" : "var(--text-faint)",
-                                    transition: "all 0.15s ease",
-                                }}
+                                className={`view-tab${currentView === v.key ? " active" : ""}`}
                             >
                                 {v.label}
-                                <span
-                                    style={{
-                                        marginLeft: 6,
-                                        fontSize: 10,
-                                        color: currentView === v.key ? "var(--text-muted)" : "var(--text-very-faint)",
-                                    }}
-                                >
-                                    {v.count}
-                                </span>
+                                <span className="view-tab-count">{v.count}</span>
                             </button>
                         ))}
                     </div>
 
-                    <div style={{ flex: 1 }} />
+                    <div className="nav-spacer" />
 
                     {[
                         { label: "+ Add", action: () => setShowAddModal(true) },
                         { label: "+ Bulk Add", action: () => setShowBulkAddModal(true) },
                         { label: "? Rating Guide", action: () => setShowRatingGuideModal(true) },
                     ].map((btn) => (
-                        <button
-                            key={btn.label}
-                            onClick={btn.action}
-                            style={{
-                                background: "var(--btn-bg)",
-                                border: "1px solid var(--border)",
-                                borderRadius: 8,
-                                padding: "6px 12px",
-                                color: "var(--text-muted)",
-                            }}
-                        >
+                        <button key={btn.label} className="btn-ghost" onClick={btn.action}>
                             {btn.label}
                         </button>
                     ))}
 
                     {queueProblems.length + reviewProblems.length + masteredProblems.length > 0 && (
-                        <button
-                            onClick={() => setShowDeleteAllModal(true)}
-                            style={{
-                                background: "var(--btn-bg)",
-                                border: "1px solid var(--border)",
-                                borderRadius: 8,
-                                padding: "6px 12px",
-                                color: "var(--text-very-faint)",
-                                transition: "color 0.2s ease",
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--difficulty-hard)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-very-faint)")}
-                        >
+                        <button className="btn-ghost-danger" onClick={() => setShowDeleteAllModal(true)}>
                             Delete All
                         </button>
                     )}
@@ -507,17 +353,7 @@ function App() {
                 {/* Main Content */}
                 <main className="animate-fade-in-up" style={{ animationDelay: "0.16s" }}>
                     {isLoadingData ? (
-                        <div
-                            style={{
-                                textAlign: "center",
-                                padding: 64,
-                                color: "var(--text-faint)",
-                                fontFamily: "JetBrains Mono, monospace",
-                                fontSize: 12,
-                            }}
-                        >
-                            Loading problems...
-                        </div>
+                        <div className="loading-state">Loading problems...</div>
                     ) : (
                         <>
                             {currentView === "review" && (
@@ -550,34 +386,9 @@ function App() {
                 </main>
 
                 {/* Footer */}
-                <footer
-                    style={{
-                        marginTop: 64,
-                        paddingTop: 24,
-                        borderTop: "1px solid var(--divider)",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                    }}
-                >
-                    <span
-                        style={{
-                            fontFamily: "JetBrains Mono, monospace",
-                            fontSize: 11,
-                            color: "var(--text-very-faint)",
-                            letterSpacing: "0.03em",
-                        }}
-                    >
-                        Repeet — spaced repetition for LeetCode
-                    </span>
-                    <span
-                        style={{
-                            fontFamily: "JetBrains Mono, monospace",
-                            fontSize: 11,
-                            color: "var(--text-very-faint)",
-                            letterSpacing: "0.03em",
-                        }}
-                    >
+                <footer className="app-footer">
+                    <span className="footer-text">Repeet — spaced repetition for LeetCode</span>
+                    <span className="footer-text">
                         Great companion to{" "}
                         <a href="https://neetcode.io" target="_blank" rel="noopener noreferrer">
                             neetcode.io

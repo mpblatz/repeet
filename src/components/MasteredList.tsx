@@ -11,7 +11,7 @@ interface MasteredListProps {
 export default function MasteredList({ problems, onRate, onDelete, onEdit }: MasteredListProps) {
     if (problems.length === 0) {
         return (
-            <p style={{ color: "var(--text-muted)", fontFamily: "IBM Plex Sans, sans-serif" }}>
+            <p className="empty-state">
                 No mastered problems yet. Keep practicing! Rate a problem 5 twice in a row to master it.
             </p>
         );
@@ -19,21 +19,11 @@ export default function MasteredList({ problems, onRate, onDelete, onEdit }: Mas
 
     return (
         <div>
-            <p style={{
-                color: "var(--text-muted)",
-                fontSize: 13,
-                marginBottom: 24,
-            }}>
+            <p className="list-description">
                 Your trophy case! These problems have been rated 5 twice in a row. They may appear as random audits (10% daily chance).
             </p>
 
-            <div style={{
-                background: "var(--card-bg)",
-                border: "1px solid var(--border)",
-                borderRadius: 14,
-                overflow: "hidden",
-                boxShadow: "var(--shadow)",
-            }}>
+            <div className="list-card">
                 <table>
                     <thead>
                         <tr>
@@ -45,7 +35,7 @@ export default function MasteredList({ problems, onRate, onDelete, onEdit }: Mas
                             <th>Attempts</th>
                             <th>Link</th>
                             <th>Rate</th>
-                            <th style={{ width: 60 }}></th>
+                            <th className="col-actions"></th>
                         </tr>
                     </thead>
                     <tbody>

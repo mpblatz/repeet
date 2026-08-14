@@ -38,82 +38,27 @@ export default function ProblemCard({
     const lastAttempt = problem.attempts[problem.attempts.length - 1];
 
     return (
-        <tr style={{
-            borderBottom: "1px solid var(--divider)",
-            transition: "background-color 0.15s ease",
-            ...(isAudit ? { background: "color-mix(in srgb, var(--link-color) 8%, transparent)" } : {}),
-        }}>
-            {rowNumber !== undefined && (
-                <td style={{
-                    fontFamily: "JetBrains Mono, monospace",
-                    fontSize: 11,
-                    color: "var(--text-faint)",
-                    padding: "10px 12px",
-                }}>
-                    {rowNumber}
-                </td>
-            )}
+        <tr className={`problem-row${isAudit ? " problem-row--audit" : ""}`}>
+            {rowNumber !== undefined && <td className="cell-mono">{rowNumber}</td>}
 
-            {isAudit && (
-                <td style={{
-                    fontFamily: "JetBrains Mono, monospace",
-                    fontSize: 10,
-                    color: "var(--link-color)",
-                    fontWeight: 600,
-                    letterSpacing: "0.05em",
-                    padding: "10px 12px",
-                }}>
-                    AUDIT
-                </td>
-            )}
+            {isAudit && <td className="cell-audit-badge">AUDIT</td>}
 
-            {problem.queue_position && (
-                <td style={{
-                    fontFamily: "JetBrains Mono, monospace",
-                    fontSize: 11,
-                    color: "var(--text-faint)",
-                    padding: "10px 12px",
-                }}>
-                    {problem.queue_position}
-                </td>
-            )}
+            {problem.queue_position && <td className="cell-mono">{problem.queue_position}</td>}
 
-            <td style={{
-                padding: "10px 12px",
-                fontWeight: isMasteryAttempt ? 500 : 400,
-                fontStyle: isMasteryAttempt ? "italic" : "normal",
-            }}>
-                {isMasteryAttempt && (
-                    <span style={{ color: "var(--link-color)", marginRight: 4 }}>★</span>
-                )}
+            <td className={isMasteryAttempt ? "problem-name--mastery" : undefined}>
+                {isMasteryAttempt && <span className="mastery-star mastery-star--left">★</span>}
                 {problem.problem_name}
-                {isMasteryAttempt && (
-                    <span style={{ color: "var(--link-color)", marginLeft: 4 }}>★</span>
-                )}
+                {isMasteryAttempt && <span className="mastery-star mastery-star--right">★</span>}
             </td>
 
-            <td style={{ padding: "10px 12px" }}>
-                <span className={`difficulty-${problem.difficulty}`}>
-                    {problem.difficulty}
-                </span>
+            <td>
+                <span className={`difficulty-${problem.difficulty}`}>{problem.difficulty}</span>
             </td>
 
-            <td style={{
-                padding: "10px 12px",
-                fontFamily: "JetBrains Mono, monospace",
-                fontSize: 11,
-                color: "var(--text-muted)",
-            }}>
-                {problem.topic || ""}
-            </td>
+            <td className="cell-topic">{problem.topic || ""}</td>
 
             {lastAttempt && (
-                <td style={{
-                    padding: "10px 12px",
-                    fontFamily: "JetBrains Mono, monospace",
-                    fontSize: 11,
-                    color: "var(--text-faint)",
-                }}>
+                <td className="cell-mono">
                     {new Date(lastAttempt.attempted_at).toLocaleDateString("en-US", {
                         month: "2-digit",
                         day: "2-digit",
@@ -123,85 +68,36 @@ export default function ProblemCard({
             )}
 
             {lastAttempt && (
-                <td style={{
-                    padding: "10px 12px",
-                    fontFamily: "JetBrains Mono, monospace",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: ratingColors[lastAttempt.rating] || "var(--text-muted)",
-                }}>
+                <td
+                    className="rating-cell"
+                    style={{ "--rating-color": ratingColors[lastAttempt.rating] } as React.CSSProperties}
+                >
                     {lastAttempt.rating}
                 </td>
             )}
 
-            {problem.next_review_date && (
-                <td style={{
-                    padding: "10px 12px",
-                    fontFamily: "JetBrains Mono, monospace",
-                    fontSize: 11,
-                    color: "var(--text-muted)",
-                }}>
-                    {formatRelativeDate(problem.next_review_date)}
-                </td>
-            )}
+            {problem.next_review_date && <td className="cell-due">{formatRelativeDate(problem.next_review_date)}</td>}
 
-            {problem.attempt_count > 0 && (
-                <td style={{
-                    padding: "10px 12px",
-                    fontFamily: "JetBrains Mono, monospace",
-                    fontSize: 11,
-                    color: "var(--text-faint)",
-                }}>
-                    {problem.attempt_count}
-                </td>
-            )}
+            {problem.attempt_count > 0 && <td className="cell-mono">{problem.attempt_count}</td>}
 
-            <td style={{ padding: "10px 12px" }}>
+            <td>
                 {problem.problem_link && (
-                    <a
-                        href={problem.problem_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                            fontFamily: "JetBrains Mono, monospace",
-                            fontSize: 11,
-                            textDecoration: "none",
-                            color: "var(--text-faint)",
-                            transition: "color 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--link-color)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-faint)")}
-                    >
+                    <a href={problem.problem_link} target="_blank" rel="noopener noreferrer" className="problem-link">
                         Open ↗
                     </a>
                 )}
             </td>
 
             {showRating && onRate && (
-                <td style={{ padding: "10px 8px" }}>
-                    <div style={{ display: "flex", gap: 4 }}>
+                <td>
+                    <div className="rating-buttons">
                         {[1, 2, 3, 4, 5].map((rating) => (
                             <button
                                 key={rating}
                                 onClick={() => onRate(problem.id, rating)}
                                 title={`Rate ${rating}`}
-                                style={{
-                                    width: 26,
-                                    height: 26,
-                                    borderRadius: 5,
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    background: `color-mix(in srgb, ${ratingColors[rating]} 10%, transparent)`,
-                                    color: ratingColors[rating],
-                                    border: `1px solid color-mix(in srgb, ${ratingColors[rating]} 20%, transparent)`,
-                                    transition: "all 0.15s ease",
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = `color-mix(in srgb, ${ratingColors[rating]} 20%, transparent)`;
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = `color-mix(in srgb, ${ratingColors[rating]} 10%, transparent)`;
-                                }}
+                                className="rating-btn"
+                                style={{ "--rating-color": ratingColors[rating] } as React.CSSProperties}
                             >
                                 {rating}
                             </button>
@@ -211,23 +107,10 @@ export default function ProblemCard({
             )}
 
             {(showEdit || showDelete) && (
-                <td style={{ padding: "10px 8px" }}>
-                    <div style={{ display: "flex", gap: 2 }}>
+                <td>
+                    <div className="row-actions">
                         {showEdit && onEdit && (
-                            <button
-                                onClick={() => onEdit(problem)}
-                                title="Edit problem"
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    color: "var(--text-very-faint)",
-                                    padding: "4px 6px",
-                                    borderRadius: 5,
-                                    transition: "color 0.2s ease",
-                                }}
-                                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--link-color)")}
-                                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-very-faint)")}
-                            >
+                            <button onClick={() => onEdit(problem)} title="Edit problem" className="icon-btn">
                                 <PencilIcon size={13} />
                             </button>
                         )}
@@ -235,16 +118,7 @@ export default function ProblemCard({
                             <button
                                 onClick={() => onDelete(problem.id)}
                                 title="Delete problem"
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    color: "var(--text-very-faint)",
-                                    padding: "4px 6px",
-                                    borderRadius: 5,
-                                    transition: "color 0.2s ease",
-                                }}
-                                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--difficulty-hard)")}
-                                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-very-faint)")}
+                                className="icon-btn icon-btn--delete"
                             >
                                 <Trash2Icon size={13} />
                             </button>
