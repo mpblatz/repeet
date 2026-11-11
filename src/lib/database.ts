@@ -59,8 +59,28 @@ export interface ProblemWithAttempts extends Problem {
     attempts: Attempt[];
 }
 
+export interface NewProblem {
+    problem_name: string;
+    problem_link?: string;
+    difficulty: ProblemDifficulty;
+    source?: string;
+    topic?: string;
+}
+
+export interface ProblemUpdates {
+    problem_name: string;
+    problem_link?: string;
+    difficulty: ProblemDifficulty;
+    topic?: string;
+}
+
+export interface LoadedData {
+    problems: ProblemWithAttempts[];
+    auditProblemId: string | null;
+}
+
 // ============================================================================
-// Database Helper Functions
+// Pure Helper Functions
 // ============================================================================
 
 /**
@@ -98,239 +118,18 @@ export const getTodayDate = (): string => {
     return new Date().toISOString().split("T")[0];
 };
 
-// ============================================================================
-// API Functions - Problems
-// ============================================================================
-
 /**
- * Get all problems for the current user
+ * Apply a rating to a problem, returning the updated problem with the new attempt appended
  */
-export const getAllProblems = async (): Promise<ProblemWithAttempts[]> => {
-    const { data: problems, error: problemsError } = await supabase
-        .from("problems")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-    if (problemsError) throw problemsError;
-
-    // Fetch attempts for each problem
-    const problemsWithAttempts = await Promise.all(
-        (problems || []).map(async (problem) => {
-            const { data: attempts } = await supabase
-                .from("attempts")
-                .select("*")
-                .eq("problem_id", problem.id)
-                .order("attempted_at", { ascending: true });
-
-            return { ...problem, attempts: attempts || [] } as ProblemWithAttempts;
-        })
-    );
-
-    return problemsWithAttempts;
-};
-
-/**
- * Get queue problems (never attempted, ordered by position)
- */
-export const getQueueProblems = async (): Promise<ProblemWithAttempts[]> => {
-    const { data: problems, error } = await supabase
-        .from("problems")
-        .select("*")
-        .eq("status", "queued")
-        .order("queue_position", { ascending: true });
-
-    if (error) throw error;
-
-    return (problems || []).map((p) => ({ ...p, attempts: [] }));
-};
-
-/**
- * Get review problems (active and due today or earlier)
- */
-export const getReviewProblems = async (): Promise<ProblemWithAttempts[]> => {
-    const { data: problems, error: problemsError } = await supabase
-        .from("problems")
-        .select("*")
-        .eq("status", "active")
-        .order("next_review_date", { ascending: true });
-
-    if (problemsError) throw problemsError;
-
-    // Fetch attempts for sorting
-    const problemsWithAttempts = await Promise.all(
-        (problems || []).map(async (problem) => {
-            const { data: attempts } = await supabase
-                .from("attempts")
-                .select("*")
-                .eq("problem_id", problem.id)
-                .order("attempted_at", { ascending: true });
-
-            return { ...problem, attempts: attempts || [] } as ProblemWithAttempts;
-        })
-    );
-
-    // Sort by: earliest last attempt, then lower rating
-    return problemsWithAttempts.sort((a, b) => {
-        const aLastAttempt = a.attempts[a.attempts.length - 1];
-        const bLastAttempt = b.attempts[b.attempts.length - 1];
-
-        if (aLastAttempt && bLastAttempt) {
-            const dateCompare =
-                new Date(aLastAttempt.attempted_at).getTime() - new Date(bLastAttempt.attempted_at).getTime();
-            if (dateCompare !== 0) return dateCompare;
-            return aLastAttempt.rating - bLastAttempt.rating;
-        }
-        return 0;
-    });
-};
-
-/**
- * Get mastered problems
- */
-export const getMasteredProblems = async (): Promise<ProblemWithAttempts[]> => {
-    const { data: problems, error: problemsError } = await supabase
-        .from("problems")
-        .select("*")
-        .eq("status", "mastered")
-        .order("mastered_at", { ascending: false });
-
-    if (problemsError) throw problemsError;
-
-    const problemsWithAttempts = await Promise.all(
-        (problems || []).map(async (problem) => {
-            const { data: attempts } = await supabase
-                .from("attempts")
-                .select("*")
-                .eq("problem_id", problem.id)
-                .order("attempted_at", { ascending: true });
-
-            return { ...problem, attempts: attempts || [] } as ProblemWithAttempts;
-        })
-    );
-
-    return problemsWithAttempts;
-};
-
-/**
- * Add a new problem to the queue
- */
-export const addProblem = async (problem: {
-    problem_name: string;
-    problem_link?: string;
-    difficulty: ProblemDifficulty;
-    source?: string;
-    topic?: string;
-}): Promise<Problem> => {
-    // Get current user
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
-
-    // Get max queue position
-    const { data: maxPosData } = await supabase
-        .from("problems")
-        .select("queue_position")
-        .eq("status", "queued")
-        .order("queue_position", { ascending: false })
-        .limit(1);
-
-    const nextPosition = (maxPosData?.[0]?.queue_position || 0) + 1;
-
-    const { data, error } = await supabase
-        .from("problems")
-        .insert({
-            user_id: user.id,
-            problem_name: problem.problem_name,
-            problem_link: problem.problem_link || null,
-            difficulty: problem.difficulty,
-            status: "queued",
-            queue_position: nextPosition,
-            source: problem.source || null,
-            topic: problem.topic || null,
-            attempt_count: 0,
-            consecutive_fives: 0,
-        })
-        .select()
-        .single();
-    console.log("marshall: ", data, error);
-    if (error) throw error;
-    return data;
-};
-
-/**
- * Add multiple problems to the queue at once
- */
-export const addProblems = async (
-    problems: Array<{
-        problem_name: string;
-        problem_link?: string;
-        difficulty: ProblemDifficulty;
-        source?: string;
-        topic?: string;
-    }>
-): Promise<Problem[]> => {
-    // Get current user
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
-
-    // Get max queue position
-    const { data: maxPosData } = await supabase
-        .from("problems")
-        .select("queue_position")
-        .eq("status", "queued")
-        .order("queue_position", { ascending: false })
-        .limit(1);
-
-    const startPosition = (maxPosData?.[0]?.queue_position || 0) + 1;
-
-    // Prepare all problems for insertion
-    const problemsToInsert = problems.map((problem, index) => ({
-        user_id: user.id,
-        problem_name: problem.problem_name,
-        problem_link: problem.problem_link || null,
-        difficulty: problem.difficulty,
-        status: "queued" as ProblemStatus,
-        queue_position: startPosition + index,
-        source: problem.source || null,
-        topic: problem.topic || null,
-        attempt_count: 0,
-        consecutive_fives: 0,
-    }));
-
-    const { data, error } = await supabase.from("problems").insert(problemsToInsert).select();
-
-    if (error) throw error;
-    return data;
-};
-
-/**
- * Rate a problem after attempting it
- */
-export const rateProblem = async (problemId: string, rating: number, notes?: string): Promise<void> => {
-    // Get current problem state
-    const { data: problem, error: problemError } = await supabase
-        .from("problems")
-        .select("*")
-        .eq("id", problemId)
-        .single();
-
-    if (problemError) throw problemError;
-
-    // Add attempt record
-    const { error: attemptError } = await supabase.from("attempts").insert({
-        problem_id: problemId,
+export const applyRating = (problem: ProblemWithAttempts, rating: number): ProblemWithAttempts => {
+    const attempt: Attempt = {
+        id: crypto.randomUUID(),
+        problem_id: problem.id,
         rating,
-        notes: notes || null,
         attempted_at: new Date().toISOString(),
-    });
-
-    if (attemptError) throw attemptError;
-
-    // Calculate next review date
-    const nextReviewDate = calculateNextReview(rating);
+        notes: null,
+        time_spent_minutes: null,
+    };
 
     // Update consecutive fives and status
     let newConsecutiveFives = problem.consecutive_fives || 0;
@@ -350,45 +149,171 @@ export const rateProblem = async (problemId: string, rating: number, notes?: str
         newStatus = "active";
     }
 
-    // Update problem
-    const { error: updateError } = await supabase
-        .from("problems")
-        .update({
-            status: newStatus,
-            queue_position: newStatus === "queued" ? problem.queue_position : null,
-            next_review_date: newStatus === "mastered" ? null : nextReviewDate,
-            attempt_count: (problem.attempt_count || 0) + 1,
-            consecutive_fives: newConsecutiveFives,
-            last_rating: rating,
-            mastered_at:
-                newStatus === "mastered" && problem.status !== "mastered"
-                    ? new Date().toISOString()
-                    : problem.mastered_at,
-        })
-        .eq("id", problemId);
+    return {
+        ...problem,
+        attempts: [...problem.attempts, attempt],
+        status: newStatus,
+        queue_position: newStatus === "queued" ? problem.queue_position : null,
+        next_review_date: newStatus === "mastered" ? null : calculateNextReview(rating),
+        attempt_count: (problem.attempt_count || 0) + 1,
+        consecutive_fives: newConsecutiveFives,
+        last_rating: rating,
+        mastered_at:
+            newStatus === "mastered" && problem.status !== "mastered" ? new Date().toISOString() : problem.mastered_at,
+    };
+};
 
+const getLastAttempt = (problem: ProblemWithAttempts): Attempt | undefined =>
+    problem.attempts[problem.attempts.length - 1];
+
+/**
+ * Split problems into the queue, review, and mastered lists, each in display order
+ */
+export const partitionProblems = (problems: ProblemWithAttempts[]) => {
+    const queue = problems
+        .filter((p) => p.status === "queued")
+        .sort((a, b) => (a.queue_position || 0) - (b.queue_position || 0));
+
+    // Sort by next review date, then (stably) by earliest last attempt, then lower rating
+    const review = problems
+        .filter((p) => p.status === "active")
+        .sort((a, b) => (a.next_review_date || "").localeCompare(b.next_review_date || ""))
+        .sort((a, b) => {
+            const aLastAttempt = getLastAttempt(a);
+            const bLastAttempt = getLastAttempt(b);
+
+            if (aLastAttempt && bLastAttempt) {
+                const dateCompare =
+                    new Date(aLastAttempt.attempted_at).getTime() - new Date(bLastAttempt.attempted_at).getTime();
+                if (dateCompare !== 0) return dateCompare;
+                return aLastAttempt.rating - bLastAttempt.rating;
+            }
+            return 0;
+        });
+
+    const mastered = problems
+        .filter((p) => p.status === "mastered")
+        .sort((a, b) => {
+            const aDate = a.mastered_at ? new Date(a.mastered_at).getTime() : 0;
+            const bDate = b.mastered_at ? new Date(b.mastered_at).getTime() : 0;
+            return bDate - aDate;
+        });
+
+    return { queue, review, mastered };
+};
+
+/**
+ * Roll for today's audit (10% chance), picking a random mastered problem
+ */
+const pickAuditProblemId = (problems: ProblemWithAttempts[]): string | null => {
+    if (Math.random() >= 0.1) return null;
+    const mastered = problems.filter((p) => p.status === "mastered");
+    if (mastered.length === 0) return null;
+    return mastered[Math.floor(Math.random() * mastered.length)].id;
+};
+
+/**
+ * Fields that change when a problem is rated
+ */
+const ratingFields = (problem: ProblemWithAttempts) => ({
+    status: problem.status,
+    queue_position: problem.queue_position,
+    next_review_date: problem.next_review_date,
+    attempt_count: problem.attempt_count,
+    consecutive_fives: problem.consecutive_fives,
+    last_rating: problem.last_rating,
+    mastered_at: problem.mastered_at,
+});
+
+// ============================================================================
+// API Functions - Problems
+// ============================================================================
+
+/**
+ * Get all problems for the current user, with attempts embedded, in a single request
+ */
+const getAllProblems = async (): Promise<ProblemWithAttempts[]> => {
+    const { data, error } = await supabase
+        .from("problems")
+        .select("*, attempts(*)")
+        .order("created_at", { ascending: true })
+        .order("attempted_at", { referencedTable: "attempts", ascending: true });
+
+    if (error) throw error;
+    return (data || []) as ProblemWithAttempts[];
+};
+
+const getNextQueuePosition = async (): Promise<number> => {
+    const { data } = await supabase
+        .from("problems")
+        .select("queue_position")
+        .eq("status", "queued")
+        .order("queue_position", { ascending: false })
+        .limit(1);
+
+    return (data?.[0]?.queue_position || 0) + 1;
+};
+
+/**
+ * Add problems to the end of the queue
+ */
+const addProblems = async (userId: string, problems: NewProblem[]): Promise<ProblemWithAttempts[]> => {
+    const startPosition = await getNextQueuePosition();
+
+    const problemsToInsert = problems.map((problem, index) => ({
+        user_id: userId,
+        problem_name: problem.problem_name,
+        problem_link: problem.problem_link || null,
+        difficulty: problem.difficulty,
+        status: "queued" as ProblemStatus,
+        queue_position: startPosition + index,
+        source: problem.source || null,
+        topic: problem.topic || null,
+        attempt_count: 0,
+        consecutive_fives: 0,
+    }));
+
+    const { data, error } = await supabase.from("problems").insert(problemsToInsert).select();
+
+    if (error) throw error;
+    return (data || []).map((p) => ({ ...p, attempts: [] }));
+};
+
+/**
+ * Persist a problem that has already had applyRating() applied
+ */
+const saveRating = async (problem: ProblemWithAttempts): Promise<void> => {
+    const attempt = getLastAttempt(problem)!;
+
+    const [{ error: attemptError }, { error: updateError }] = await Promise.all([
+        supabase.from("attempts").insert({
+            id: attempt.id,
+            problem_id: problem.id,
+            rating: attempt.rating,
+            notes: attempt.notes,
+            attempted_at: attempt.attempted_at,
+        }),
+        supabase.from("problems").update(ratingFields(problem)).eq("id", problem.id),
+    ]);
+
+    if (attemptError) throw attemptError;
     if (updateError) throw updateError;
 };
 
 /**
  * Delete a problem and all its attempts
  */
-export const deleteProblem = async (problemId: string): Promise<void> => {
+const deleteProblem = async (problemId: string): Promise<void> => {
     const { error } = await supabase.from("problems").delete().eq("id", problemId);
 
     if (error) throw error;
 };
 
 /**
- * Delete every problem (and their attempts) belonging to the current user
+ * Delete every problem (and their attempts) belonging to the user
  */
-export const deleteAllProblems = async (): Promise<void> => {
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
-
-    const { error } = await supabase.from("problems").delete().eq("user_id", user.id);
+const deleteAllProblems = async (userId: string): Promise<void> => {
+    const { error } = await supabase.from("problems").delete().eq("user_id", userId);
 
     if (error) throw error;
 };
@@ -396,15 +321,7 @@ export const deleteAllProblems = async (): Promise<void> => {
 /**
  * Update a problem's editable fields
  */
-export const updateProblem = async (
-    problemId: string,
-    updates: {
-        problem_name: string;
-        problem_link?: string;
-        difficulty: ProblemDifficulty;
-        topic?: string;
-    }
-): Promise<void> => {
+const updateProblem = async (problemId: string, updates: ProblemUpdates): Promise<void> => {
     const { error } = await supabase
         .from("problems")
         .update({
@@ -422,190 +339,135 @@ export const updateProblem = async (
 // API Functions - User Settings
 // ============================================================================
 
-/**
- * Get user settings
- */
-export const getUserSettings = async (): Promise<UserSettings | null> => {
-    const { data, error } = await supabase.from("user_settings").select("*").single();
+const getUserSettings = async (): Promise<UserSettings | null> => {
+    const { data, error } = await supabase.from("user_settings").select("*").maybeSingle();
 
-    if (error && error.code !== "PGRST116") throw error; // PGRST116 = no rows
+    if (error) throw error;
     return data;
 };
 
-/**
- * Update or create user settings
- */
-export const upsertUserSettings = async (settings: Partial<UserSettings>): Promise<void> => {
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
-
+const upsertUserSettings = async (userId: string, settings: Partial<UserSettings>): Promise<void> => {
     const { error } = await supabase.from("user_settings").upsert({
-        user_id: user.id,
+        user_id: userId,
         ...settings,
     });
 
     if (error) throw error;
 };
 
-/**
- * Check for daily audit (10% chance)
- */
-export const checkDailyAudit = async (): Promise<ProblemWithAttempts | null> => {
-    const today = getTodayDate();
-    const settings = await getUserSettings();
-
-    // Already checked today
-    if (settings?.last_audit_date === today) {
-        if (settings.audit_problem_id) {
-            const { data } = await supabase.from("problems").select("*").eq("id", settings.audit_problem_id).single();
-            return data;
-        }
-        return null;
-    }
-
-    // 10% chance for audit
-    if (Math.random() < 0.1) {
-        const { data: masteredProblems } = await supabase.from("problems").select("*").eq("status", "mastered");
-
-        if (masteredProblems && masteredProblems.length > 0) {
-            const randomProblem = masteredProblems[Math.floor(Math.random() * masteredProblems.length)];
-
-            await upsertUserSettings({
-                last_audit_date: today,
-                audit_problem_id: randomProblem.id,
-            });
-
-            return randomProblem;
-        }
-    }
-
-    // No audit today
-    await upsertUserSettings({
-        last_audit_date: today,
-        audit_problem_id: null,
-    });
-
-    return null;
-};
-
-// ============================================================================
-// Stats Functions
-// ============================================================================
-
-/**
- * Get stats for dashboard
- */
-export const getStats = async () => {
-    const [allProblems, reviewProblems] = await Promise.all([getAllProblems(), getReviewProblems()]);
-
-    const queueCount = allProblems.filter((p) => p.status === "queued").length;
-    const activeCount = allProblems.filter((p) => p.status === "active").length;
-    const masteredCount = allProblems.filter((p) => p.status === "mastered").length;
-
-    return {
-        total: allProblems.length,
-        queued: queueCount,
-        active: activeCount,
-        mastered: masteredCount,
-        dueToday: reviewProblems.length,
-        masteryRate:
-            activeCount + masteredCount > 0 ? Math.round((masteredCount / (activeCount + masteredCount)) * 100) : 0,
-    };
-};
-
-// Add this at the very end of supabase.ts, after all your existing functions
-
 // ============================================================================
 // Storage Abstraction Layer (Supabase OR localStorage)
 // ============================================================================
 
+// Logs how long a storage call takes in dev, to track down slow requests
+const timed = async <T,>(label: string, fn: () => Promise<T>): Promise<T> => {
+    if (!import.meta.env.DEV) return fn();
+    const start = performance.now();
+    try {
+        return await fn();
+    } finally {
+        console.log(`[repeet] ${label}: ${Math.round(performance.now() - start)}ms`);
+    }
+};
+
+const LOCAL_PROBLEMS_KEY = "repeet-problems";
+const LOCAL_AUDIT_KEY = "repeet-audit";
+
 class StorageAdapter {
-    private async isAuthenticated(): Promise<boolean> {
-        const {
-            data: { session },
-        } = await supabase.auth.getSession();
-        return !!session;
+    // Signed-in user, kept in sync by the app's auth listener so no call needs an auth round trip
+    private userId: string | null = null;
+    private resolveReady!: () => void;
+    private ready = new Promise<void>((resolve) => (this.resolveReady = resolve));
+
+    setUser(userId: string | null): void {
+        if (import.meta.env.DEV) {
+            console.log(`[repeet] auth resolved (${userId ? "signed in" : "signed out"}) at ${Math.round(performance.now())}ms`);
+        }
+        this.userId = userId;
+        this.resolveReady();
+    }
+
+    // Resolves to the user id, or null when signed out (localStorage mode)
+    private async getUserId(): Promise<string | null> {
+        await this.ready;
+        return this.userId;
     }
 
     // ========== localStorage helpers ==========
 
     private getLocalProblems(): ProblemWithAttempts[] {
-        const data = localStorage.getItem("repeet-problems");
+        const data = localStorage.getItem(LOCAL_PROBLEMS_KEY);
         return data ? JSON.parse(data) : [];
     }
 
     private saveLocalProblems(problems: ProblemWithAttempts[]): void {
-        localStorage.setItem("repeet-problems", JSON.stringify(problems));
+        localStorage.setItem(LOCAL_PROBLEMS_KEY, JSON.stringify(problems));
     }
 
     // ========== Public API (works with both Supabase and localStorage) ==========
 
-    async getQueueProblems(): Promise<ProblemWithAttempts[]> {
-        if (await this.isAuthenticated()) {
-            return getQueueProblems();
-        } else {
-            const problems = this.getLocalProblems();
-            return problems
-                .filter((p) => p.status === "queued")
-                .sort((a, b) => (a.queue_position || 0) - (b.queue_position || 0));
-        }
-    }
+    /**
+     * Load every problem plus today's audit, rolling a new audit on the first load of the day
+     */
+    async loadAll(): Promise<LoadedData> {
+        const userId = await this.getUserId();
+        const today = getTodayDate();
 
-    async getReviewProblems(): Promise<ProblemWithAttempts[]> {
-        if (await this.isAuthenticated()) {
-            return getReviewProblems();
-        } else {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const weekFromNow = new Date(today);
-            weekFromNow.setDate(weekFromNow.getDate() + 7);
-            const weekFromNowDate = weekFromNow.toISOString().split("T")[0];
+        if (userId) {
+            const [problems, settings] = await Promise.all([
+                timed("load problems", getAllProblems),
+                timed("load settings", getUserSettings),
+            ]);
 
-            const problems = this.getLocalProblems();
-            return problems.filter(
-                (p) => p.status === "active" && p.next_review_date && p.next_review_date <= weekFromNowDate
+            if (settings?.last_audit_date === today) {
+                return { problems, auditProblemId: settings.audit_problem_id };
+            }
+
+            // Save today's roll in the background rather than holding up the first render
+            const auditProblemId = pickAuditProblemId(problems);
+            upsertUserSettings(userId, { last_audit_date: today, audit_problem_id: auditProblemId }).catch((error) =>
+                console.error("Error saving daily audit:", error),
             );
+            return { problems, auditProblemId };
+        } else {
+            const problems = this.getLocalProblems();
+            const storedAudit = localStorage.getItem(LOCAL_AUDIT_KEY);
+            const auditData = storedAudit ? JSON.parse(storedAudit) : null;
+
+            if (auditData?.last_audit_date === today) {
+                return { problems, auditProblemId: auditData.audit_problem_id };
+            }
+
+            const auditProblemId = pickAuditProblemId(problems);
+            localStorage.setItem(
+                LOCAL_AUDIT_KEY,
+                JSON.stringify({ last_audit_date: today, audit_problem_id: auditProblemId }),
+            );
+            return { problems, auditProblemId };
         }
     }
 
-    async getMasteredProblems(): Promise<ProblemWithAttempts[]> {
-        if (await this.isAuthenticated()) {
-            return getMasteredProblems();
-        } else {
-            const problems = this.getLocalProblems();
-            return problems
-                .filter((p) => p.status === "mastered")
-                .sort((a, b) => {
-                    const aDate = a.mastered_at ? new Date(a.mastered_at).getTime() : 0;
-                    const bDate = b.mastered_at ? new Date(b.mastered_at).getTime() : 0;
-                    return bDate - aDate;
-                });
-        }
+    async addProblem(problem: NewProblem): Promise<ProblemWithAttempts> {
+        const [added] = await this.addProblems([problem]);
+        return added;
     }
 
-    async addProblem(problem: {
-        problem_name: string;
-        problem_link?: string;
-        difficulty: ProblemDifficulty;
-        source?: string;
-        topic?: string;
-    }): Promise<Problem> {
-        if (await this.isAuthenticated()) {
-            return addProblem(problem);
+    async addProblems(problemsList: NewProblem[]): Promise<ProblemWithAttempts[]> {
+        const userId = await this.getUserId();
+        if (userId) {
+            return addProblems(userId, problemsList);
         } else {
-            const problems = this.getLocalProblems();
-            const maxPosition = Math.max(...problems.map((p) => p.queue_position || 0), 0);
+            const existingProblems = this.getLocalProblems();
+            const maxPosition = Math.max(...existingProblems.map((p) => p.queue_position || 0), 0);
 
-            const newProblem: Problem = {
+            const newProblems: ProblemWithAttempts[] = problemsList.map((problem, index) => ({
                 id: crypto.randomUUID(),
                 user_id: "local",
                 problem_name: problem.problem_name,
                 problem_link: problem.problem_link || null,
                 difficulty: problem.difficulty,
                 status: "queued",
-                queue_position: maxPosition + 1,
+                queue_position: maxPosition + 1 + index,
                 next_review_date: null,
                 attempt_count: 0,
                 consecutive_fives: 0,
@@ -614,118 +476,28 @@ class StorageAdapter {
                 mastered_at: null,
                 source: problem.source || null,
                 topic: problem.topic || null,
-            };
+                attempts: [],
+            }));
 
-            const newProblemWithAttempts = { ...newProblem, attempts: [] };
-            this.saveLocalProblems([...problems, newProblemWithAttempts]);
-            return newProblem;
-        }
-    }
-
-    async addProblems(
-        problemsList: Array<{
-            problem_name: string;
-            problem_link?: string;
-            difficulty: ProblemDifficulty;
-            source?: string;
-            topic?: string;
-        }>
-    ): Promise<Problem[]> {
-        if (await this.isAuthenticated()) {
-            return addProblems(problemsList);
-        } else {
-            const existingProblems = this.getLocalProblems();
-            const maxPosition = Math.max(...existingProblems.map((p) => p.queue_position || 0), 0);
-
-            const newProblems = problemsList.map((problem, index) => {
-                const newProblem: Problem = {
-                    id: crypto.randomUUID(),
-                    user_id: "local",
-                    problem_name: problem.problem_name,
-                    problem_link: problem.problem_link || null,
-                    difficulty: problem.difficulty,
-                    status: "queued",
-                    queue_position: maxPosition + 1 + index,
-                    next_review_date: null,
-                    attempt_count: 0,
-                    consecutive_fives: 0,
-                    last_rating: null,
-                    created_at: new Date().toISOString(),
-                    mastered_at: null,
-                    source: problem.source || null,
-                    topic: problem.topic || null,
-                };
-                return newProblem;
-            });
-
-            const newProblemsWithAttempts = newProblems.map((p) => ({ ...p, attempts: [] }));
-            this.saveLocalProblems([...existingProblems, ...newProblemsWithAttempts]);
+            this.saveLocalProblems([...existingProblems, ...newProblems]);
             return newProblems;
         }
     }
 
-    async rateProblem(problemId: string, rating: number): Promise<void> {
-        if (await this.isAuthenticated()) {
-            return rateProblem(problemId, rating);
+    /**
+     * Persist a problem that has already had applyRating() applied
+     */
+    async rateProblem(ratedProblem: ProblemWithAttempts): Promise<void> {
+        if (await this.getUserId()) {
+            return timed("save rating", () => saveRating(ratedProblem));
         } else {
             const problems = this.getLocalProblems();
-            const problemIndex = problems.findIndex((p) => p.id === problemId);
-            if (problemIndex === -1) return;
-
-            const problem = problems[problemIndex];
-
-            // Add attempt
-            const newAttempt: Attempt = {
-                id: crypto.randomUUID(),
-                problem_id: problemId,
-                rating,
-                attempted_at: new Date().toISOString(),
-                notes: null,
-                time_spent_minutes: null,
-            };
-            problem.attempts.push(newAttempt);
-
-            // Calculate next review
-            const nextReviewDate = calculateNextReview(rating);
-
-            // Update status
-            let newConsecutiveFives = problem.consecutive_fives || 0;
-            let newStatus = problem.status;
-
-            if (rating === 5) {
-                newConsecutiveFives += 1;
-                if (newConsecutiveFives >= 2) {
-                    newStatus = "mastered";
-                }
-            } else {
-                newConsecutiveFives = 0;
-            }
-
-            if (problem.status === "queued") {
-                newStatus = "active";
-            }
-
-            // Update problem
-            problems[problemIndex] = {
-                ...problem,
-                status: newStatus,
-                queue_position: newStatus === "queued" ? problem.queue_position : null,
-                next_review_date: newStatus === "mastered" ? null : nextReviewDate,
-                attempt_count: (problem.attempt_count || 0) + 1,
-                consecutive_fives: newConsecutiveFives,
-                last_rating: rating,
-                mastered_at:
-                    newStatus === "mastered" && problem.status !== "mastered"
-                        ? new Date().toISOString()
-                        : problem.mastered_at,
-            };
-
-            this.saveLocalProblems(problems);
+            this.saveLocalProblems(problems.map((p) => (p.id === ratedProblem.id ? ratedProblem : p)));
         }
     }
 
     async deleteProblem(problemId: string): Promise<void> {
-        if (await this.isAuthenticated()) {
+        if (await this.getUserId()) {
             return deleteProblem(problemId);
         } else {
             const problems = this.getLocalProblems();
@@ -734,64 +506,33 @@ class StorageAdapter {
     }
 
     async deleteAllProblems(): Promise<void> {
-        if (await this.isAuthenticated()) {
-            return deleteAllProblems();
+        const userId = await this.getUserId();
+        if (userId) {
+            return deleteAllProblems(userId);
         } else {
             this.saveLocalProblems([]);
-            localStorage.removeItem("repeet-audit");
+            localStorage.removeItem(LOCAL_AUDIT_KEY);
         }
     }
 
-    async updateProblem(
-        problemId: string,
-        updates: {
-            problem_name: string;
-            problem_link?: string;
-            difficulty: ProblemDifficulty;
-            topic?: string;
-        }
-    ): Promise<void> {
-        if (await this.isAuthenticated()) {
+    async updateProblem(problemId: string, updates: ProblemUpdates): Promise<void> {
+        if (await this.getUserId()) {
             return updateProblem(problemId, updates);
         } else {
             const problems = this.getLocalProblems();
-            const problemIndex = problems.findIndex((p) => p.id === problemId);
-            if (problemIndex === -1) return;
-
-            problems[problemIndex] = {
-                ...problems[problemIndex],
-                problem_name: updates.problem_name,
-                problem_link: updates.problem_link || null,
-                difficulty: updates.difficulty,
-                topic: updates.topic || null,
-            };
-
-            this.saveLocalProblems(problems);
-        }
-    }
-
-    async getStats() {
-        if (await this.isAuthenticated()) {
-            return getStats();
-        } else {
-            const allProblems = this.getLocalProblems();
-            const reviewProblems = await this.getReviewProblems();
-
-            const queueCount = allProblems.filter((p) => p.status === "queued").length;
-            const activeCount = allProblems.filter((p) => p.status === "active").length;
-            const masteredCount = allProblems.filter((p) => p.status === "mastered").length;
-
-            return {
-                total: allProblems.length,
-                queued: queueCount,
-                active: activeCount,
-                mastered: masteredCount,
-                dueToday: reviewProblems.length,
-                masteryRate:
-                    activeCount + masteredCount > 0
-                        ? Math.round((masteredCount / (activeCount + masteredCount)) * 100)
-                        : 0,
-            };
+            this.saveLocalProblems(
+                problems.map((p) =>
+                    p.id === problemId
+                        ? {
+                              ...p,
+                              problem_name: updates.problem_name,
+                              problem_link: updates.problem_link || null,
+                              difficulty: updates.difficulty,
+                              topic: updates.topic || null,
+                          }
+                        : p,
+                ),
+            );
         }
     }
 
@@ -803,24 +544,13 @@ class StorageAdapter {
         const localProblems = this.getLocalProblems();
         if (localProblems.length === 0) return 0;
 
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return 0;
+        const userId = await this.getUserId();
+        if (!userId) return 0;
 
-        // Get current max queue position from server
-        const { data: maxPosData } = await supabase
-            .from("problems")
-            .select("queue_position")
-            .eq("status", "queued")
-            .order("queue_position", { ascending: false })
-            .limit(1);
+        let nextPosition = await getNextQueuePosition();
 
-        let nextPosition = (maxPosData?.[0]?.queue_position || 0) + 1;
-
-        // Insert problems in batches
         const problemsToInsert = localProblems.map((p) => ({
-            user_id: user.id,
+            user_id: userId,
             problem_name: p.problem_name,
             problem_link: p.problem_link,
             difficulty: p.difficulty,
@@ -836,38 +566,21 @@ class StorageAdapter {
             topic: p.topic,
         }));
 
-        const { data: insertedProblems, error } = await supabase
-            .from("problems")
-            .insert(problemsToInsert)
-            .select();
+        const { data: insertedProblems, error } = await supabase.from("problems").insert(problemsToInsert).select();
 
         if (error) throw error;
 
         // Migrate attempts - map old local IDs to new server IDs
         if (insertedProblems) {
-            const attemptsToInsert: Array<{
-                problem_id: string;
-                rating: number;
-                attempted_at: string;
-                notes: string | null;
-                time_spent_minutes: number | null;
-            }> = [];
-
-            for (let i = 0; i < localProblems.length; i++) {
-                const localProblem = localProblems[i];
-                const serverProblem = insertedProblems[i];
-                if (localProblem.attempts && localProblem.attempts.length > 0) {
-                    for (const attempt of localProblem.attempts) {
-                        attemptsToInsert.push({
-                            problem_id: serverProblem.id,
-                            rating: attempt.rating,
-                            attempted_at: attempt.attempted_at,
-                            notes: attempt.notes,
-                            time_spent_minutes: attempt.time_spent_minutes,
-                        });
-                    }
-                }
-            }
+            const attemptsToInsert = localProblems.flatMap((localProblem, i) =>
+                (localProblem.attempts || []).map((attempt) => ({
+                    problem_id: insertedProblems[i].id,
+                    rating: attempt.rating,
+                    attempted_at: attempt.attempted_at,
+                    notes: attempt.notes,
+                    time_spent_minutes: attempt.time_spent_minutes,
+                })),
+            );
 
             if (attemptsToInsert.length > 0) {
                 await supabase.from("attempts").insert(attemptsToInsert);
@@ -875,64 +588,10 @@ class StorageAdapter {
         }
 
         // Clear local data after successful migration
-        localStorage.removeItem("repeet-problems");
-        localStorage.removeItem("repeet-audit");
+        localStorage.removeItem(LOCAL_PROBLEMS_KEY);
+        localStorage.removeItem(LOCAL_AUDIT_KEY);
 
         return localProblems.length;
-    }
-
-    async checkDailyAudit(): Promise<ProblemWithAttempts | null> {
-        if (await this.isAuthenticated()) {
-            return checkDailyAudit();
-        } else {
-            const today = getTodayDate();
-            const auditKey = "repeet-audit";
-
-            // Get stored audit data
-            const storedAudit = localStorage.getItem(auditKey);
-            const auditData = storedAudit ? JSON.parse(storedAudit) : null;
-
-            // Already checked today
-            if (auditData?.last_audit_date === today) {
-                if (auditData.audit_problem_id) {
-                    const problems = this.getLocalProblems();
-                    const auditProblem = problems.find((p) => p.id === auditData.audit_problem_id);
-                    return auditProblem || null;
-                }
-                return null;
-            }
-
-            // 10% chance for audit
-            if (Math.random() < 0.1) {
-                const masteredProblems = await this.getMasteredProblems();
-
-                if (masteredProblems.length > 0) {
-                    const randomProblem = masteredProblems[Math.floor(Math.random() * masteredProblems.length)];
-
-                    // Save audit data
-                    localStorage.setItem(
-                        auditKey,
-                        JSON.stringify({
-                            last_audit_date: today,
-                            audit_problem_id: randomProblem.id,
-                        })
-                    );
-
-                    return randomProblem;
-                }
-            }
-
-            // No audit today
-            localStorage.setItem(
-                auditKey,
-                JSON.stringify({
-                    last_audit_date: today,
-                    audit_problem_id: null,
-                })
-            );
-
-            return null;
-        }
     }
 }
 

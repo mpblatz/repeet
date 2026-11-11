@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { type ProblemDifficulty } from "../lib/database";
-import grind75text from "../assets/grind-75.txt?raw";
-import neetcode150text from "../assets/neetcode-150.txt?raw";
-import neetcode150NeetcodeLinksText from "../assets/neetcode-150-neetcode-links.txt?raw";
+
+// Curated sets are loaded on demand so they stay out of the main bundle
+const presets = [
+    { label: "Neetcode 150 (LeetCode links)", load: () => import("../assets/neetcode-150.txt?raw") },
+    { label: "Neetcode 150 (NeetCode.io links)", load: () => import("../assets/neetcode-150-neetcode-links.txt?raw") },
+    { label: "Grind 75", load: () => import("../assets/grind-75.txt?raw") },
+];
 
 interface BulkImportModalProps {
     onClose: () => void;
@@ -88,15 +92,16 @@ export default function BulkImportModal({ onClose, onBulkAdd }: BulkImportModalP
                     <div>
                         <p className="bulk-hint">Or load a curated problem set:</p>
                         <div className="bulk-presets">
-                            <button type="button" className="btn" onClick={() => setText(neetcode150text)}>
-                                Neetcode 150 (LeetCode links)
-                            </button>
-                            <button type="button" className="btn" onClick={() => setText(neetcode150NeetcodeLinksText)}>
-                                Neetcode 150 (NeetCode.io links)
-                            </button>
-                            <button type="button" className="btn" onClick={() => setText(grind75text)}>
-                                Grind 75
-                            </button>
+                            {presets.map((preset) => (
+                                <button
+                                    key={preset.label}
+                                    type="button"
+                                    className="btn"
+                                    onClick={async () => setText((await preset.load()).default)}
+                                >
+                                    {preset.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
 

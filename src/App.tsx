@@ -1,6 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase, type ProblemWithAttempts } from "./lib/database";
-import { storage, type ProblemDifficulty } from "./lib/database";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import type { Session } from "@supabase/supabase-js";
+import {
+    supabase,
+    storage,
+    applyRating,
+    partitionProblems,
+    type ProblemWithAttempts,
+    type NewProblem,
+    type ProblemUpdates,
+} from "./lib/database";
 import AuthModal from "./components/AuthModal";
 import QueueList from "./components/QueueList";
 import ReviewList from "./components/ReviewList";
@@ -18,6 +26,24 @@ interface Toast {
     id: number;
     message: string;
     type: "success" | "error";
+}
+
+// Last data seen while signed in, so the app can render instantly while it refreshes
+const CACHE_KEY = "repeet-cache";
+
+interface CachedData {
+    email: string | undefined;
+    problems: ProblemWithAttempts[];
+    auditProblemId: string | null;
+}
+
+function readCache(): CachedData | null {
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
 }
 
 function getInitialTheme(): string {
@@ -77,14 +103,16 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
 }
 
 function App() {
-    const [session, setSession] = useState<any>(null);
-    const previousSessionRef = useRef<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [cache] = useState(readCache);
+    const [session, setSession] = useState<Session | null>(null);
+    const previousSessionRef = useRef<Session | null>(null);
+    const [authResolved, setAuthResolved] = useState(false);
+    // Only block on a loading screen when there's no cached data to show
+    const [loading, setLoading] = useState(!cache);
+    const loadIdRef = useRef(0);
 
-    const [queueProblems, setQueueProblems] = useState<ProblemWithAttempts[]>([]);
-    const [reviewProblems, setReviewProblems] = useState<ProblemWithAttempts[]>([]);
-    const [masteredProblems, setMasteredProblems] = useState<ProblemWithAttempts[]>([]);
-    const [auditProblem, setAuditProblem] = useState<ProblemWithAttempts | null>(null);
+    const [problems, setProblems] = useState<ProblemWithAttempts[]>(cache?.problems ?? []);
+    const [auditProblemId, setAuditProblemId] = useState<string | null>(cache?.auditProblemId ?? null);
 
     const [currentView, setCurrentView] = useState<View>("review");
     const [showAddModal, setShowAddModal] = useState(false);
@@ -92,9 +120,18 @@ function App() {
     const [showRatingGuideModal, setShowRatingGuideModal] = useState(false);
     const [editingProblem, setEditingProblem] = useState<ProblemWithAttempts | null>(null);
     const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
-    const [isLoadingData, setIsLoadingData] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
+
+    const {
+        queue: queueProblems,
+        review: reviewProblems,
+        mastered: masteredProblems,
+    } = useMemo(() => partitionProblems(problems), [problems]);
+    const auditProblem = useMemo(
+        () => problems.find((p) => p.id === auditProblemId) ?? null,
+        [problems, auditProblemId],
+    );
 
     // Apply stored theme on mount
     useEffect(() => {
@@ -113,73 +150,92 @@ function App() {
         setToasts((prev) => prev.filter((t) => t.id !== id));
     }, []);
 
-    useEffect(() => {
-        loadAllData();
-
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            const wasSignedOut = !previousSessionRef.current;
-            previousSessionRef.current = session;
-            setSession(session);
-            setLoading(false);
-
-            // Skip the initial session restore — the mount-time loadAllData() above already covers it
-            if (_event === "INITIAL_SESSION") return;
-
-            // Migrate local data when user signs in for the first time this session
-            if (session && wasSignedOut && (_event === "SIGNED_IN" || _event === "TOKEN_REFRESHED")) {
-                try {
-                    const migrated = await storage.migrateLocalData();
-                    if (migrated > 0) {
-                        addToast(
-                            `Merged ${migrated} local problem${migrated !== 1 ? "s" : ""} into your account`,
-                            "success",
-                        );
-                    }
-                } catch (error) {
-                    console.error("Error migrating local data:", error);
-                }
-                loadAllData(true);
-            } else if (_event === "SIGNED_OUT") {
-                loadAllData(true);
-            }
-        });
-        return () => subscription.unsubscribe();
-    }, []);
-
-    // silent = refresh data in the background without blanking the current view
-    const loadAllData = async (silent = false) => {
-        if (!silent) setIsLoadingData(true);
+    // Refresh data in the background; results from an older, superseded load are dropped
+    const loadAllData = useCallback(async () => {
+        const loadId = ++loadIdRef.current;
         try {
-            const [queue, review, mastered, _statsData, audit] = await Promise.all([
-                storage.getQueueProblems(),
-                storage.getReviewProblems(),
-                storage.getMasteredProblems(),
-                storage.getStats(),
-                storage.checkDailyAudit(),
-            ]);
-            setQueueProblems(queue);
-            setReviewProblems(review);
-            setMasteredProblems(mastered);
-            setAuditProblem(audit);
+            const data = await storage.loadAll();
+            if (loadId !== loadIdRef.current) return;
+            setProblems(data.problems);
+            setAuditProblemId(data.auditProblemId);
         } catch (error) {
             console.error("Error loading data:", error);
         } finally {
-            if (!silent) setIsLoadingData(false);
+            if (loadId === loadIdRef.current) setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            const wasSignedOut = !previousSessionRef.current;
+            previousSessionRef.current = session;
+            storage.setUser(session?.user.id ?? null);
+            setSession(session);
+            setAuthResolved(true);
+
+            // Defer Supabase calls out of the auth callback — awaiting them inside it can deadlock the client
+            setTimeout(async () => {
+                if (_event === "INITIAL_SESSION") {
+                    loadAllData();
+                } else if (session && wasSignedOut && (_event === "SIGNED_IN" || _event === "TOKEN_REFRESHED")) {
+                    // Migrate local data when user signs in for the first time this session
+                    try {
+                        const migrated = await storage.migrateLocalData();
+                        if (migrated > 0) {
+                            addToast(
+                                `Merged ${migrated} local problem${migrated !== 1 ? "s" : ""} into your account`,
+                                "success",
+                            );
+                        }
+                    } catch (error) {
+                        console.error("Error migrating local data:", error);
+                    }
+                    loadAllData();
+                } else if (_event === "SIGNED_OUT") {
+                    loadAllData();
+                }
+            }, 0);
+        });
+        return () => subscription.unsubscribe();
+    }, [loadAllData, addToast]);
+
+    // Keep the startup cache in sync with what a signed-in user is looking at
+    useEffect(() => {
+        if (!authResolved) return;
+        if (session) {
+            const data: CachedData = { email: session.user.email, problems, auditProblemId };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        } else {
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }, [authResolved, session, problems, auditProblemId]);
+
+    // Show a change immediately, then persist it; on failure roll back and resync from storage
+    const applyOptimistic = async (
+        next: ProblemWithAttempts[],
+        persist: () => Promise<void>,
+        errorMessage: string,
+    ): Promise<boolean> => {
+        const previous = problems;
+        setProblems(next);
+        try {
+            await persist();
+            return true;
+        } catch (error: any) {
+            console.error(`${errorMessage}:`, error);
+            setProblems(previous);
+            addToast(error?.message || errorMessage, "error");
+            loadAllData();
+            return false;
         }
     };
 
-    const handleAddProblem = async (problem: {
-        problem_name: string;
-        problem_link?: string;
-        difficulty: ProblemDifficulty;
-        source?: string;
-        topic?: string;
-    }) => {
+    const handleAddProblem = async (problem: NewProblem) => {
         try {
-            await storage.addProblem(problem);
-            await loadAllData(true);
+            const added = await storage.addProblem(problem);
+            setProblems((prev) => [...prev, added]);
             setShowAddModal(false);
             addToast(`Added "${problem.problem_name}" to queue`, "success");
         } catch (error: any) {
@@ -188,20 +244,15 @@ function App() {
         }
     };
 
-    const handleBulkAddProblems = async (
-        problems: Array<{
-            problem_name: string;
-            problem_link?: string;
-            difficulty: ProblemDifficulty;
-            source?: string;
-            topic?: string;
-        }>,
-    ) => {
+    const handleBulkAddProblems = async (newProblems: NewProblem[]) => {
         try {
-            await storage.addProblems(problems);
-            await loadAllData(true);
+            const added = await storage.addProblems(newProblems);
+            setProblems((prev) => [...prev, ...added]);
             setShowBulkAddModal(false);
-            addToast(`Imported ${problems.length} problem${problems.length !== 1 ? "s" : ""} to queue`, "success");
+            addToast(
+                `Imported ${newProblems.length} problem${newProblems.length !== 1 ? "s" : ""} to queue`,
+                "success",
+            );
         } catch (error: any) {
             console.error("Error adding problems:", error);
             addToast(error?.message || "Failed to import problems", "error");
@@ -209,57 +260,50 @@ function App() {
     };
 
     const handleRateProblem = async (problemId: string, rating: number) => {
-        try {
-            await storage.rateProblem(problemId, rating);
-            await loadAllData(true);
-        } catch (error: any) {
-            console.error("Error rating problem:", error);
-            addToast(error?.message || "Failed to rate problem", "error");
-        }
+        const problem = problems.find((p) => p.id === problemId);
+        if (!problem) return;
+        const rated = applyRating(problem, rating);
+        await applyOptimistic(
+            problems.map((p) => (p.id === problemId ? rated : p)),
+            () => storage.rateProblem(rated),
+            "Failed to rate problem",
+        );
     };
 
     const handleDeleteProblem = async (problemId: string) => {
         if (!confirm("Are you sure you want to delete this problem?")) return;
-        try {
-            await storage.deleteProblem(problemId);
-            await loadAllData(true);
-            addToast("Problem deleted", "success");
-        } catch (error: any) {
-            console.error("Error deleting problem:", error);
-            addToast(error?.message || "Failed to delete problem", "error");
-        }
+        const ok = await applyOptimistic(
+            problems.filter((p) => p.id !== problemId),
+            () => storage.deleteProblem(problemId),
+            "Failed to delete problem",
+        );
+        if (ok) addToast("Problem deleted", "success");
     };
 
     const handleDeleteAllProblems = async () => {
-        try {
-            await storage.deleteAllProblems();
-            await loadAllData(true);
-            setShowDeleteAllModal(false);
-            addToast("Deleted all problems", "success");
-        } catch (error: any) {
-            console.error("Error deleting all problems:", error);
-            addToast(error?.message || "Failed to delete all problems", "error");
-        }
+        setShowDeleteAllModal(false);
+        const ok = await applyOptimistic([], () => storage.deleteAllProblems(), "Failed to delete all problems");
+        if (ok) addToast("Deleted all problems", "success");
     };
 
-    const handleUpdateProblem = async (
-        problemId: string,
-        updates: {
-            problem_name: string;
-            problem_link?: string;
-            difficulty: ProblemDifficulty;
-            topic?: string;
-        },
-    ) => {
-        try {
-            await storage.updateProblem(problemId, updates);
-            await loadAllData(true);
-            setEditingProblem(null);
-            addToast(`Updated "${updates.problem_name}"`, "success");
-        } catch (error: any) {
-            console.error("Error updating problem:", error);
-            addToast(error?.message || "Failed to update problem", "error");
-        }
+    const handleUpdateProblem = async (problemId: string, updates: ProblemUpdates) => {
+        setEditingProblem(null);
+        const ok = await applyOptimistic(
+            problems.map((p) =>
+                p.id === problemId
+                    ? {
+                          ...p,
+                          problem_name: updates.problem_name,
+                          problem_link: updates.problem_link || null,
+                          difficulty: updates.difficulty,
+                          topic: updates.topic || null,
+                      }
+                    : p,
+            ),
+            () => storage.updateProblem(problemId, updates),
+            "Failed to update problem",
+        );
+        if (ok) addToast(`Updated "${updates.problem_name}"`, "success");
     };
 
     const handleAuthSuccess = (message: string) => {
@@ -284,6 +328,9 @@ function App() {
         { key: "mastered", label: "Mastered", count: masteredProblems.length },
     ];
 
+    // Until auth resolves, assume the cached user is still signed in
+    const email = authResolved ? session?.user.email : cache?.email;
+
     if (loading) {
         return (
             <div className="app-loading">
@@ -301,9 +348,9 @@ function App() {
                     <h1 className="brand">Repeet</h1>
                     <div className="header-actions">
                         <ThemeToggle />
-                        {session ? (
+                        {email ? (
                             <div className="session-info">
-                                <span className="session-email">{session.user.email}</span>
+                                <span className="session-email">{email}</span>
                                 <button className="btn-ghost" onClick={handleLogout}>
                                     Logout
                                 </button>
@@ -343,7 +390,7 @@ function App() {
                         </button>
                     ))}
 
-                    {queueProblems.length + reviewProblems.length + masteredProblems.length > 0 && (
+                    {problems.length > 0 && (
                         <button className="btn-ghost-danger" onClick={() => setShowDeleteAllModal(true)}>
                             Delete All
                         </button>
@@ -352,36 +399,30 @@ function App() {
 
                 {/* Main Content */}
                 <main className="animate-fade-in-up" style={{ animationDelay: "0.16s" }}>
-                    {isLoadingData ? (
-                        <div className="loading-state">Loading problems...</div>
-                    ) : (
-                        <>
-                            {currentView === "review" && (
-                                <ReviewList
-                                    problems={reviewProblems}
-                                    auditProblem={auditProblem}
-                                    onRate={handleRateProblem}
-                                    onDelete={handleDeleteProblem}
-                                    onEdit={setEditingProblem}
-                                />
-                            )}
-                            {currentView === "queue" && (
-                                <QueueList
-                                    problems={queueProblems}
-                                    onRate={handleRateProblem}
-                                    onDelete={handleDeleteProblem}
-                                    onEdit={setEditingProblem}
-                                />
-                            )}
-                            {currentView === "mastered" && (
-                                <MasteredList
-                                    problems={masteredProblems}
-                                    onRate={handleRateProblem}
-                                    onDelete={handleDeleteProblem}
-                                    onEdit={setEditingProblem}
-                                />
-                            )}
-                        </>
+                    {currentView === "review" && (
+                        <ReviewList
+                            problems={reviewProblems}
+                            auditProblem={auditProblem}
+                            onRate={handleRateProblem}
+                            onDelete={handleDeleteProblem}
+                            onEdit={setEditingProblem}
+                        />
+                    )}
+                    {currentView === "queue" && (
+                        <QueueList
+                            problems={queueProblems}
+                            onRate={handleRateProblem}
+                            onDelete={handleDeleteProblem}
+                            onEdit={setEditingProblem}
+                        />
+                    )}
+                    {currentView === "mastered" && (
+                        <MasteredList
+                            problems={masteredProblems}
+                            onRate={handleRateProblem}
+                            onDelete={handleDeleteProblem}
+                            onEdit={setEditingProblem}
+                        />
                     )}
                 </main>
 
@@ -420,7 +461,7 @@ function App() {
                 )}
                 {showDeleteAllModal && (
                     <DeleteAllModal
-                        count={queueProblems.length + reviewProblems.length + masteredProblems.length}
+                        count={problems.length}
                         onClose={() => setShowDeleteAllModal(false)}
                         onConfirm={handleDeleteAllProblems}
                     />
